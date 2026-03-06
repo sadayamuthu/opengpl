@@ -72,9 +72,7 @@ jobs:
           fi
 
           # Clone opengpl.org repo
-          git config --global credential.helper \
-            '!f() { echo "username=x-token"; echo "password=$DEPLOY_TOKEN"; }; f'
-          git clone https://github.com/sadayamuthu/opengpl.org.git /tmp/opengpl-org
+          git clone https://x-access-token:${DEPLOY_TOKEN}@github.com/sadayamuthu/opengpl.org.git /tmp/opengpl-org
 
           # Copy schema files into versioned directory
           mkdir -p /tmp/opengpl-org/${SCHEMA_DIR}
