@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   detect-changes:
@@ -74,7 +75,7 @@ jobs:
           echo "spec version bump confirmed: $MAIN_VERSION -> $PR_VERSION"
 
   check-sdk-version:
-    name: Verify sdk/VERSION bumped
+    name: Verify sdk version bumped (pyproject.toml)
     needs: detect-changes
     if: needs.detect-changes.outputs.sdk == 'true'
     runs-on: ubuntu-latest
@@ -83,36 +84,38 @@ jobs:
       - name: Get PR version
         id: pr_version
         run: |
-          if [ ! -f sdk/VERSION ]; then
-            echo "::error::sdk/VERSION file is missing from this PR."
+          if [ ! -f sdk/pyproject.toml ]; then
+            echo "::error::sdk/pyproject.toml is missing from this PR."
             exit 1
           fi
-          echo "version=$(tr -d '[:space:]' < sdk/VERSION)" >> "$GITHUB_OUTPUT"
+          version=$(python3 -c "import tomllib; f=open('sdk/pyproject.toml','rb'); d=tomllib.load(f); print(d['project']['version'])")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: Validate semver format
         env:
           PR_VERSION: ${{ steps.pr_version.outputs.version }}
         run: |
           if ! echo "$PR_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::error::sdk/VERSION '$PR_VERSION' is not valid semver (MAJOR.MINOR.PATCH)"
+            echo "::error::sdk/pyproject.toml version '$PR_VERSION' is not valid semver (MAJOR.MINOR.PATCH)"
             exit 1
           fi
       - name: Get main version
         id: main_version
         run: |
           git fetch origin main --depth=1
-          echo "version=$(git show origin/main:sdk/VERSION | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
+          version=$(git show origin/main:sdk/pyproject.toml | python3 -c "import sys,tomllib; print(tomllib.load(sys.stdin.buffer)['project']['version'])")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: Compare versions
         env:
           PR_VERSION: ${{ steps.pr_version.outputs.version }}
           MAIN_VERSION: ${{ steps.main_version.outputs.version }}
         run: |
           if [ "$PR_VERSION" = "$MAIN_VERSION" ]; then
-            echo "::error::sdk/VERSION has not been bumped. PR=$PR_VERSION, main=$MAIN_VERSION"
+            echo "::error::sdk version has not been bumped. PR=$PR_VERSION, main=$MAIN_VERSION"
             exit 1
           fi
           HIGHER=$(printf '%s\n%s\n' "$MAIN_VERSION" "$PR_VERSION" | sort -V | tail -n1)
           if [ "$HIGHER" != "$PR_VERSION" ]; then
-            echo "::error::sdk/VERSION ($PR_VERSION) is lower than main ($MAIN_VERSION)."
+            echo "::error::sdk version ($PR_VERSION) is lower than main ($MAIN_VERSION)."
             exit 1
           fi
           echo "sdk version bump confirmed: $MAIN_VERSION -> $PR_VERSION"
