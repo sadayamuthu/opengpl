@@ -1,0 +1,76 @@
+name: Release SDK
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'sdk/**'
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Run SDK tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          cd sdk
+          pip install -e ".[dev]"
+          python -m spacy download en_core_web_lg
+      - name: Run tests
+        run: |
+          cd sdk
+          pytest tests/ -v --tb=short
+
+  publish:
+    name: Build and publish to PyPI
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Read and validate VERSION
+        id: version
+        run: |
+          VERSION=$(tr -d '[:space:]' < sdk/VERSION)
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::sdk/VERSION '$VERSION' is not valid semver"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Check tag uniqueness
+        run: |
+          if git ls-remote --tags origin "refs/tags/sdk-v${{ steps.version.outputs.version }}" | grep -q .; then
+            echo "::error::Tag sdk-v${{ steps.version.outputs.version }} already exists."
+            exit 1
+          fi
+
+      - name: Build wheel and sdist
+        run: |
+          cd sdk
+          pip install build
+          python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages-dir: sdk/dist/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: sdk-v${{ steps.version.outputs.version }}
+          name: "opengpl-sdk v${{ steps.version.outputs.version }}"
+          generate_release_notes: true

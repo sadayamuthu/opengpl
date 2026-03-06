@@ -1,0 +1,10 @@
+version: "3.9"
+services:
+  opengpl-sidecar:
+    image: opengpl/sidecar:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./policy.gpl:/policies/policy.gpl:ro
+    environment:
+      OPENGPL_POLICY_DIR: /policies

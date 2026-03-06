@@ -1,0 +1,94 @@
+name: Release Schema
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'spec/**'
+
+permissions:
+  contents: write
+
+jobs:
+  release-schema:
+    name: Publish schema to opengpl.org and GitHub Releases
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read and validate VERSION
+        id: version
+        run: |
+          if [ ! -f spec/VERSION ]; then
+            echo "::error::spec/VERSION not found"
+            exit 1
+          fi
+          VERSION=$(tr -d '[:space:]' < spec/VERSION)
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::spec/VERSION '$VERSION' is not valid semver (MAJOR.MINOR.PATCH)"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Check if tag already exists
+        run: |
+          if git ls-remote --tags origin "refs/tags/spec-v${{ steps.version.outputs.version }}" | grep -q .; then
+            echo "::error::Tag spec-v${{ steps.version.outputs.version }} already exists. Bump spec/VERSION."
+            exit 1
+          fi
+
+      - name: Build archives
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          mkdir -p dist
+          tar czf dist/opengpl-spec-${VERSION}.tar.gz \
+            --exclude='.git' --exclude='dist' \
+            -C spec .
+          zip -r dist/opengpl-spec-${VERSION}.zip spec/ \
+            --exclude='spec/.git/*' --exclude='spec/dist/*'
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: spec-v${{ steps.version.outputs.version }}
+          name: "OpenGPL Spec v${{ steps.version.outputs.version }}"
+          generate_release_notes: true
+          files: |
+            dist/opengpl-spec-*.tar.gz
+            dist/opengpl-spec-*.zip
+
+      - name: Publish schema to opengpl.org repo
+        env:
+          DEPLOY_TOKEN: ${{ secrets.OPENGPL_ORG_DEPLOY_TOKEN }}
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          SCHEMA_DIR="schemas/v$(echo $VERSION | cut -d. -f1-2)"
+
+          # Validate schema files exist
+          if ! ls spec/schemas/opengpl-v*.json 1>/dev/null 2>&1; then
+            echo "::error::No JSON schema file found in spec/schemas/"
+            exit 1
+          fi
+
+          # Clone opengpl.org repo
+          git config --global credential.helper \
+            '!f() { echo "username=x-token"; echo "password=$DEPLOY_TOKEN"; }; f'
+          git clone https://github.com/sadayamuthu/opengpl.org.git /tmp/opengpl-org
+
+          # Copy schema files into versioned directory
+          mkdir -p /tmp/opengpl-org/${SCHEMA_DIR}
+          cp spec/schemas/opengpl-v*.json /tmp/opengpl-org/${SCHEMA_DIR}/opengpl.schema.json
+          cp spec/schemas/opengpl-v*.yaml /tmp/opengpl-org/${SCHEMA_DIR}/opengpl.schema.yaml 2>/dev/null || true
+
+          # Commit and push if anything changed
+          cd /tmp/opengpl-org
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add ${SCHEMA_DIR}/
+          if git diff --cached --quiet; then
+            echo "No schema changes to publish."
+          else
+            git commit -m "schema: publish opengpl spec v${VERSION}"
+            git push
+          fi

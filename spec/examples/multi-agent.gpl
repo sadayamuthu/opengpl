@@ -1,0 +1,215 @@
+# OpenGPL v0.1 — Multi-Agent Trust Hierarchy Example
+# Demonstrates how to configure policies across an orchestrator agent
+# and its subordinate worker agents with different trust levels.
+#
+# Architecture:
+#   orchestrator-agent (HIGH trust)
+#     ├── research-agent   (MEDIUM trust)
+#     ├── writer-agent     (MEDIUM trust)
+#     └── executor-agent   (LOW trust)
+#
+# Maintained by OpenAstra — openastra.org/opengpl
+
+---
+# ─── Policy 1: Orchestrator Agent ─────────────────────────────────────────────
+# The orchestrator coordinates the other agents. It receives high trust
+# because it is an internal system agent with authenticated identity.
+
+opengpl: '0.1'
+policy: multi-agent-orchestrator
+version: '1.0.0'
+description: >
+  Governs the orchestrator agent that coordinates research, writing, and
+  execution sub-agents. High trust level — authenticated internal system.
+status: ACTIVE
+owner: platform-engineering
+
+applies_to:
+  models: ['gpt-4o', 'claude-3-5-sonnet']
+  agents: [orchestrator-agent]
+  contexts: [content-pipeline, research-pipeline]
+  environments: [production]
+
+input_controls:
+  detect:
+    - prompt_injection
+    - context_stuffing
+  max_context_tokens: 32000
+  require_user_auth: true
+
+model_controls:
+  allow_tools:
+    - delegate_to_research_agent
+    - delegate_to_writer_agent
+    - delegate_to_executor_agent
+    - task_queue_read
+    - task_queue_write
+    - output_store_write
+  deny_tools:
+    - external_api           # Orchestrator does not call external APIs directly
+    - database_write         # Must delegate to executor-agent
+    - email_send
+  trust_level: HIGH
+  require_human_in_loop:
+    - irreversible_action    # Any action that cannot be undone
+    - high_cost_operation    # Operations estimated above cost threshold
+  allow_code_execution: false
+  allow_external_calls: false
+  max_tool_calls: 50
+
+output_controls:
+  block: [credentials, PII]
+  require: [source_attribution]
+  hallucination_threshold: 0.20
+
+audit:
+  log_level: FULL
+  format: JSON
+  retention_days: 365
+  compliance: [SOC2, NIST-AI-RMF]
+  evidence_export: true
+  alert_on_violation: true
+  alert_channels: [slack, siem]
+
+enforcement:
+  engine: OpenLSP
+  on_violation: BLOCK
+  on_detection: ALERT
+  fallback: DENY
+
+---
+# ─── Policy 2: Research Agent ──────────────────────────────────────────────────
+# Research agent performs web search and document retrieval.
+# Medium trust — cannot write data, can only read and summarize.
+
+opengpl: '0.1'
+policy: multi-agent-researcher
+version: '1.0.0'
+description: >
+  Governs the research sub-agent responsible for web search and document
+  retrieval. Read-only access. Delegates to orchestrator for any writes.
+status: ACTIVE
+owner: platform-engineering
+extends: multi-agent-orchestrator  # Inherits base controls
+
+applies_to:
+  models: ['gpt-4o', 'claude-3-5-sonnet']
+  agents: [research-agent]
+  contexts: [content-pipeline, research-pipeline]
+  environments: [production]
+
+# Override only what differs from orchestrator
+model_controls:
+  allow_tools:
+    - web_search
+    - document_retrieval
+    - knowledge_base_lookup
+    - url_fetch
+  deny_tools:
+    - task_queue_write
+    - output_store_write
+    - delegate_to_executor_agent
+    - email_send
+    - database_write
+    - external_api_write
+  trust_level: MEDIUM          # Lower than orchestrator
+  allow_external_calls: true   # Research agent may fetch external URLs
+  max_tool_calls: 20
+
+output_controls:
+  block: [credentials, PII]
+  require: [source_attribution]  # All research must cite sources
+  max_response_tokens: 4000
+  hallucination_threshold: 0.15
+
+audit:
+  log_level: FULL
+  format: JSON
+  retention_days: 365
+  compliance: [SOC2, NIST-AI-RMF]
+  evidence_export: true
+  alert_on_violation: true
+  alert_channels: [slack, siem]
+
+enforcement:
+  engine: OpenLSP
+  on_violation: BLOCK
+  fallback: DENY
+
+---
+# ─── Policy 3: Executor Agent ──────────────────────────────────────────────────
+# Executor agent performs writes and side effects. Lowest trust level.
+# Requires human-in-loop for all consequential actions.
+
+opengpl: '0.1'
+policy: multi-agent-executor
+version: '1.0.0'
+description: >
+  Governs the executor sub-agent that performs write operations and
+  side effects (database writes, email sends, API calls). Lowest trust
+  level — requires human approval for all consequential actions.
+status: ACTIVE
+owner: platform-engineering
+
+applies_to:
+  models: ['gpt-4o']
+  agents: [executor-agent]
+  contexts: [content-pipeline]
+  environments: [production]
+
+input_controls:
+  detect:
+    - prompt_injection
+    - context_stuffing
+    - data_exfiltration
+  sanitize:
+    - credentials
+    - PII
+
+model_controls:
+  allow_tools:
+    - database_write
+    - email_send
+    - cms_publish
+    - api_post
+  deny_tools:
+    - web_search
+    - code_execution
+    - file_delete
+    - user_data_export
+  trust_level: LOW             # Lowest trust — writes require verification
+  require_human_in_loop:
+    - public_publish            # Any content published publicly
+    - external_email            # Any email to external recipients
+    - database_delete           # Any delete operation
+    - api_post_financial        # Any financial API call
+  allow_code_execution: false
+  allow_external_calls: true   # Executor may call external APIs (write)
+  max_tool_calls: 5            # Tightly limited — each call has side effects
+
+output_controls:
+  block: [credentials, PII, SSN]
+  require: [source_attribution]
+  max_response_tokens: 500
+  hallucination_threshold: 0.05  # Strictest — executor actions have real consequences
+
+audit:
+  log_level: FULL
+  format: OSCAL
+  retention_days: 365
+  compliance: [SOC2, NIST-AI-RMF]
+  pii_in_logs: false
+  evidence_export: true
+  alert_on_violation: true
+  alert_channels: [pagerduty, siem, slack]
+
+enforcement:
+  engine: OpenLSP
+  on_violation: BLOCK
+  on_detection: ESCALATE       # Escalate detections to human review
+  fallback: DENY
+
+metadata:
+  tags: [multi-agent, executor, high-risk, side-effects]
+  review_cycle: monthly        # Monthly review — highest risk agent
+  approved_by: CISO

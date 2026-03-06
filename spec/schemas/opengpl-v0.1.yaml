@@ -1,0 +1,469 @@
+# OpenGPL v0.1 — YAML Schema Reference
+# Human-readable reference for all policy fields, types, and valid values.
+# Machine-readable validation: use opengpl-v0.1.json (JSON Schema)
+#
+# Maintained by OpenAstra — openastra.org/opengpl
+
+---
+opengpl:
+  type: string
+  required: true
+  description: OpenGPL specification version. Must be '0.1' for this schema.
+  example: '0.1'
+
+policy:
+  type: string (slug)
+  required: true
+  pattern: "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+  description: Unique policy identifier using lowercase letters, numbers, and hyphens.
+  example: customer-service-agent
+
+version:
+  type: string (semver)
+  required: true
+  pattern: "MAJOR.MINOR.PATCH"
+  description: Semantic version of this policy document.
+  example: '1.0.0'
+
+description:
+  type: string
+  required: true
+  min_length: 10
+  description: Human-readable summary of what this policy governs and why.
+
+status:
+  type: enum
+  required: true
+  values:
+    - DRAFT       # Work in progress, not enforced
+    - REVIEW      # Under review, may be enforced in test environments
+    - ACTIVE      # Enforced in production
+    - DEPRECATED  # No longer enforced, retained for audit history
+
+owner:
+  type: string
+  required: true
+  description: Team or individual responsible for maintaining this policy.
+  example: security-team
+
+extends:
+  type: string (slug)
+  required: false
+  description: >
+    Parent policy identifier. Child policy inherits all parent controls
+    and may override specific fields. Single-level inheritance only.
+  example: org-baseline-policy
+
+# ─── applies_to ─────────────────────────────────────────────────────────────
+
+applies_to:
+  required: true
+  description: Defines the scope of application for this policy.
+
+  models:
+    type: string[]
+    required: true
+    description: LLM model identifiers. Use '*' as wildcard for all models.
+    examples:
+      - ['*']
+      - ['gpt-4o', 'claude-3-5-sonnet']
+      - ['llama-3', 'mistral-7b']
+
+  agents:
+    type: string[]
+    required: false
+    description: Named agent identifiers or wildcard patterns (prefix* supported).
+    examples:
+      - ['patient-portal-bot']
+      - ['dev-*']  # All agents starting with 'dev-'
+
+  contexts:
+    type: string[]
+    required: true
+    description: Deployment context labels that activate this policy.
+    examples:
+      - [customer-service]
+      - [appointment-booking, billing-inquiry]
+
+  environments:
+    type: enum[]
+    required: false
+    values: [development, staging, production]
+    description: Deployment environments where this policy is active.
+
+  effective_from:
+    type: date (ISO 8601)
+    required: false
+    format: YYYY-MM-DD
+    description: Date from which this policy becomes active.
+
+  effective_until:
+    type: date (ISO 8601)
+    required: false
+    format: YYYY-MM-DD
+    description: Date after which this policy expires and is no longer enforced.
+
+# ─── input_controls ──────────────────────────────────────────────────────────
+
+input_controls:
+  required: false
+  description: Controls applied to incoming prompts before reaching the LLM.
+
+  detect:
+    type: enum[]
+    required: false
+    default: []
+    values:
+      - prompt_injection       # Override system instructions via crafted input
+      - jailbreak              # Bypass safety guidelines or policy constraints
+      - context_stuffing       # Inject false context to manipulate behavior
+      - role_confusion         # Cause model to adopt unauthorized persona
+      - data_exfiltration      # Probe for system context or other users' data
+      - adversarial_elicitation # Systematic capability mapping or training data extraction
+
+  sanitize:
+    type: enum[]
+    required: false
+    default: []
+    values:
+      - pii                  # Personally Identifiable Information
+      - credentials          # Passwords, API keys, tokens, secrets
+      - internal_system_refs # Internal hostnames, IPs, system names
+      - ip_addresses         # IPv4/IPv6 addresses
+
+  max_context_tokens:
+    type: integer
+    required: false
+    default: unlimited
+    minimum: 1
+    description: Maximum total token count for the input context window.
+
+  max_prompt_tokens:
+    type: integer
+    required: false
+    default: unlimited
+    minimum: 1
+    description: Maximum token count for the user prompt itself.
+
+  allow_system_override:
+    type: boolean
+    required: false
+    default: false
+    description: Whether system prompts can override user-level policy controls.
+
+  require_user_auth:
+    type: boolean
+    required: false
+    default: false
+    description: Whether a verified user identity (via OpenID.ai) is required.
+
+  language_filter:
+    type: string[] (ISO 639-1)
+    required: false
+    default: []
+    description: Permitted natural languages. Empty list means all languages permitted.
+    examples:
+      - [en]
+      - [en, es, fr]
+
+# ─── model_controls ──────────────────────────────────────────────────────────
+
+model_controls:
+  required: false
+  description: Controls applied to model behavior and capabilities.
+
+  allow_tools:
+    type: string[]
+    required: false
+    default: []
+    description: Explicitly permitted tool or function call names.
+
+  deny_tools:
+    type: string[]
+    required: false
+    default: []
+    description: Explicitly denied tool or function call names. Deny takes precedence over allow.
+
+  trust_level:
+    type: enum
+    required: false
+    default: MEDIUM
+    values:
+      - UNTRUSTED  # Level 0 — External, unauthenticated. Deny-by-default.
+      - LOW        # Level 1 — Authenticated external agents. Minimal permissions.
+      - MEDIUM     # Level 2 — Internal agents, standard access. Standard controls.
+      - HIGH       # Level 3 — Privileged internal agents. Elevated permissions.
+      - SYSTEM     # Level 4 — System-level authority. Operator-defined controls.
+
+  require_human_in_loop:
+    type: string[]
+    required: false
+    default: []
+    description: >
+      Semantic conditions that require human approval before the agent proceeds.
+      Values are context labels evaluated by the enforcement engine.
+    examples:
+      - [medication_question, diagnostic_inquiry]
+      - [financial_decision_above_1000]
+
+  max_tool_calls:
+    type: integer
+    required: false
+    default: unlimited
+    minimum: 0
+    description: Maximum number of tool invocations per session.
+
+  allow_code_execution:
+    type: boolean
+    required: false
+    default: false
+    description: Whether the model may execute generated code via a code interpreter tool.
+
+  allow_external_calls:
+    type: boolean
+    required: false
+    default: false
+    description: Whether the model may make calls to external APIs or URLs.
+
+  temperature_ceiling:
+    type: float
+    required: false
+    default: provider_default
+    minimum: 0.0
+    maximum: 2.0
+    description: Maximum sampling temperature. Lower values produce more deterministic outputs.
+
+  model_routing:
+    type: object
+    required: false
+    description: Rules for routing requests to specific model versions or endpoints.
+
+# ─── output_controls ─────────────────────────────────────────────────────────
+
+output_controls:
+  required: false
+  description: Controls applied to LLM-generated responses before delivery.
+
+  block:
+    type: enum[]
+    required: false
+    default: []
+    description: Data categories to block entirely. Triggers violation action if detected.
+    values:
+      - PII          # Personally Identifiable Information
+      - PHI          # Protected Health Information (HIPAA)
+      - SSN          # Social Security Numbers
+      - credit_card  # Payment card numbers (PCI-DSS)
+      - credentials  # Passwords, API keys, tokens
+      - date_of_birth
+      - biometric
+      - financial
+
+  redact:
+    type: enum[]
+    required: false
+    default: []
+    description: Data categories to replace with [REDACTED] rather than blocking entirely.
+    values: (same as block)
+
+  require:
+    type: string[]
+    required: false
+    default: []
+    description: Output attributes that must be present in the response.
+    values:
+      - source_attribution          # Response must cite sources
+      - confidence_score            # Response must include confidence indicator
+      - disclaimer                  # Response must include a disclaimer
+      - disclaimer_not_medical_advice
+      - disclaimer_not_legal_advice
+
+  deny_topics:
+    type: string[]
+    required: false
+    default: []
+    description: Semantic topic categories the model must not address.
+    examples:
+      - [clinical_diagnosis, medication_prescription]
+      - [competitor_pricing, internal_roadmap]
+
+  max_response_tokens:
+    type: integer
+    required: false
+    default: unlimited
+    minimum: 1
+    description: Maximum token count for the generated response.
+
+  hallucination_threshold:
+    type: float
+    required: false
+    minimum: 0.0
+    maximum: 1.0
+    description: >
+      Maximum acceptable hallucination risk score (0.0 = no risk, 1.0 = certain hallucination).
+      Responses exceeding this threshold trigger the configured violation action.
+    recommended_values:
+      government_legal: 0.05
+      healthcare: 0.10
+      enterprise_general: 0.20
+      development: 0.50
+
+  tone_enforcement:
+    type: enum
+    required: false
+    values:
+      - professional
+      - neutral
+      - formal
+      - supportive
+
+  deny_formats:
+    type: string[]
+    required: false
+    default: []
+    values:
+      - executable_code
+      - shell_commands
+      - sql_injection_patterns
+      - encoded_payloads
+
+# ─── audit ───────────────────────────────────────────────────────────────────
+
+audit:
+  required: true
+  description: Configures audit logging and compliance evidence generation.
+
+  log_level:
+    type: enum
+    required: true
+    values:
+      - OFF      # No logging
+      - SUMMARY  # Violation counts and policy decisions only
+      - STANDARD # Decisions + metadata (no content)
+      - FULL     # Full request/response with policy evaluation trace
+      - DEBUG    # FULL + internal engine state (development only)
+
+  format:
+    type: enum
+    required: false
+    default: JSON
+    values:
+      - JSON   # Standard structured JSON logs
+      - OSCAL  # NIST OSCAL-compatible evidence artifacts
+      - SIEM   # SIEM-compatible format (CEF/Syslog-compatible)
+      - CEF    # Common Event Format
+
+  retention_days:
+    type: integer
+    required: false
+    default: 90
+    minimum: 1
+    guidance:
+      SOC2: 365
+      FedRAMP: 365
+      HIPAA: 2555  # 7 years
+      federal_records: 3650  # 10 years
+
+  compliance:
+    type: enum[]
+    required: false
+    default: []
+    values:
+      - FedRAMP-Low
+      - FedRAMP-Moderate
+      - FedRAMP-High
+      - HIPAA
+      - SOC2
+      - EU-AI-Act
+      - NIST-AI-RMF
+      - ISO-42001
+      - DPDPA
+      - CCPA
+      - PCI-DSS
+
+  pii_in_logs:
+    type: boolean
+    required: false
+    default: false
+    description: Whether PII may appear in audit logs. Requires legal justification.
+
+  evidence_export:
+    type: boolean
+    required: false
+    default: false
+    description: >
+      Auto-export OSCAL evidence artifacts on policy evaluation.
+      Consumed by ControlGate / OpenCIQ for compliance assembly.
+
+  alert_on_violation:
+    type: boolean
+    required: false
+    default: true
+
+  alert_channels:
+    type: enum[]
+    required: false
+    default: []
+    values: [email, slack, pagerduty, siem, teams, webhook]
+
+# ─── enforcement ─────────────────────────────────────────────────────────────
+
+enforcement:
+  required: true
+  description: Configures the enforcement engine and violation response behavior.
+
+  engine:
+    type: string
+    required: true
+    default: OpenLSP
+    description: Enforcement engine identifier. OpenLSP is the reference implementation.
+
+  on_violation:
+    type: enum
+    required: true
+    description: Action taken when a policy rule is violated.
+    values:
+      - ALLOW     # Pass through, no action
+      - LOG       # Pass through, write to audit log
+      - REDACT    # Pass through with sensitive data replaced by [REDACTED]
+      - ALERT     # Pass through, trigger alert channels
+      - BLOCK     # Return violation error, request not processed
+      - ESCALATE  # Pause, route to human reviewer queue
+      - DENY      # Hard denial, no fallback, always logged
+
+  on_detection:
+    type: enum
+    required: false
+    default: ALERT
+    description: Action taken when a threat is detected in input_controls.
+    values: (same as on_violation)
+
+  fallback:
+    type: enum
+    required: false
+    default: DENY
+    description: Action taken when the enforcement engine is unavailable.
+    values: (same as on_violation)
+
+# ─── metadata ────────────────────────────────────────────────────────────────
+
+metadata:
+  required: false
+  description: Optional organizational metadata for policy management.
+
+  tags:
+    type: string[]
+    description: Free-form tags for categorization and search.
+
+  review_cycle:
+    type: enum
+    values: [monthly, quarterly, bi-annual, annual]
+
+  last_reviewed:
+    type: date (ISO 8601)
+    format: YYYY-MM-DD
+
+  approved_by:
+    type: string
+    description: Name or role of the person who approved this policy.
+    examples: [CISO, security-team-lead, compliance-officer]

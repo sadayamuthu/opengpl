@@ -1,0 +1,162 @@
+name: Check Version Bump
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  detect-changes:
+    name: Detect changed components
+    runs-on: ubuntu-latest
+    outputs:
+      spec: ${{ steps.filter.outputs.spec }}
+      sdk: ${{ steps.filter.outputs.sdk }}
+      sidecar: ${{ steps.filter.outputs.sidecar }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            spec:
+              - 'spec/**'
+            sdk:
+              - 'sdk/**'
+            sidecar:
+              - 'sidecar/**'
+
+  check-spec-version:
+    name: Verify spec/VERSION bumped
+    needs: detect-changes
+    if: needs.detect-changes.outputs.spec == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get PR version
+        id: pr_version
+        run: |
+          if [ ! -f spec/VERSION ]; then
+            echo "::error::spec/VERSION file is missing from this PR."
+            exit 1
+          fi
+          echo "version=$(tr -d '[:space:]' < spec/VERSION)" >> "$GITHUB_OUTPUT"
+      - name: Validate semver format
+        env:
+          PR_VERSION: ${{ steps.pr_version.outputs.version }}
+        run: |
+          if ! echo "$PR_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::spec/VERSION '$PR_VERSION' is not valid semver (MAJOR.MINOR.PATCH)"
+            exit 1
+          fi
+      - name: Get main version
+        id: main_version
+        run: |
+          git fetch origin main --depth=1
+          echo "version=$(git show origin/main:spec/VERSION | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
+      - name: Compare versions
+        env:
+          PR_VERSION: ${{ steps.pr_version.outputs.version }}
+          MAIN_VERSION: ${{ steps.main_version.outputs.version }}
+        run: |
+          if [ "$PR_VERSION" = "$MAIN_VERSION" ]; then
+            echo "::error::spec/VERSION has not been bumped. PR=$PR_VERSION, main=$MAIN_VERSION"
+            exit 1
+          fi
+          HIGHER=$(printf '%s\n%s\n' "$MAIN_VERSION" "$PR_VERSION" | sort -V | tail -n1)
+          if [ "$HIGHER" != "$PR_VERSION" ]; then
+            echo "::error::spec/VERSION ($PR_VERSION) is lower than main ($MAIN_VERSION)."
+            exit 1
+          fi
+          echo "spec version bump confirmed: $MAIN_VERSION -> $PR_VERSION"
+
+  check-sdk-version:
+    name: Verify sdk/VERSION bumped
+    needs: detect-changes
+    if: needs.detect-changes.outputs.sdk == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get PR version
+        id: pr_version
+        run: |
+          if [ ! -f sdk/VERSION ]; then
+            echo "::error::sdk/VERSION file is missing from this PR."
+            exit 1
+          fi
+          echo "version=$(tr -d '[:space:]' < sdk/VERSION)" >> "$GITHUB_OUTPUT"
+      - name: Validate semver format
+        env:
+          PR_VERSION: ${{ steps.pr_version.outputs.version }}
+        run: |
+          if ! echo "$PR_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::sdk/VERSION '$PR_VERSION' is not valid semver (MAJOR.MINOR.PATCH)"
+            exit 1
+          fi
+      - name: Get main version
+        id: main_version
+        run: |
+          git fetch origin main --depth=1
+          echo "version=$(git show origin/main:sdk/VERSION | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
+      - name: Compare versions
+        env:
+          PR_VERSION: ${{ steps.pr_version.outputs.version }}
+          MAIN_VERSION: ${{ steps.main_version.outputs.version }}
+        run: |
+          if [ "$PR_VERSION" = "$MAIN_VERSION" ]; then
+            echo "::error::sdk/VERSION has not been bumped. PR=$PR_VERSION, main=$MAIN_VERSION"
+            exit 1
+          fi
+          HIGHER=$(printf '%s\n%s\n' "$MAIN_VERSION" "$PR_VERSION" | sort -V | tail -n1)
+          if [ "$HIGHER" != "$PR_VERSION" ]; then
+            echo "::error::sdk/VERSION ($PR_VERSION) is lower than main ($MAIN_VERSION)."
+            exit 1
+          fi
+          echo "sdk version bump confirmed: $MAIN_VERSION -> $PR_VERSION"
+
+  check-sidecar-version:
+    name: Verify sidecar/VERSION bumped
+    needs: detect-changes
+    if: needs.detect-changes.outputs.sidecar == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get PR version
+        id: pr_version
+        run: |
+          if [ ! -f sidecar/VERSION ]; then
+            echo "::error::sidecar/VERSION file is missing from this PR."
+            exit 1
+          fi
+          echo "version=$(tr -d '[:space:]' < sidecar/VERSION)" >> "$GITHUB_OUTPUT"
+      - name: Validate semver format
+        env:
+          PR_VERSION: ${{ steps.pr_version.outputs.version }}
+        run: |
+          if ! echo "$PR_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::sidecar/VERSION '$PR_VERSION' is not valid semver (MAJOR.MINOR.PATCH)"
+            exit 1
+          fi
+      - name: Get main version
+        id: main_version
+        run: |
+          git fetch origin main --depth=1
+          echo "version=$(git show origin/main:sidecar/VERSION | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
+      - name: Compare versions
+        env:
+          PR_VERSION: ${{ steps.pr_version.outputs.version }}
+          MAIN_VERSION: ${{ steps.main_version.outputs.version }}
+        run: |
+          if [ "$PR_VERSION" = "$MAIN_VERSION" ]; then
+            echo "::error::sidecar/VERSION has not been bumped. PR=$PR_VERSION, main=$MAIN_VERSION"
+            exit 1
+          fi
+          HIGHER=$(printf '%s\n%s\n' "$MAIN_VERSION" "$PR_VERSION" | sort -V | tail -n1)
+          if [ "$HIGHER" != "$PR_VERSION" ]; then
+            echo "::error::sidecar/VERSION ($PR_VERSION) is lower than main ($MAIN_VERSION)."
+            exit 1
+          fi
+          echo "sidecar version bump confirmed: $MAIN_VERSION -> $PR_VERSION"

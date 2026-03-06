@@ -1,0 +1,107 @@
+# OpenGPL v0.1 — FedRAMP Moderate Example
+# Suitable for federal agency AI deployments requiring FedRAMP Moderate authorization
+
+opengpl: '0.1'
+policy: fedramp-moderate-agent
+version: '1.0.0'
+description: >
+  Governs AI agent deployments within a FedRAMP Moderate authorization boundary.
+  Enforces NIST SP 800-53 Rev 5 controls applicable to LLM systems.
+status: ACTIVE
+owner: isso-team
+
+applies_to:
+  models:
+    - gpt-4o
+    - claude-3-5-sonnet
+    - llama-3
+  contexts:
+    - government-service
+    - document-analysis
+    - citizen-support
+  environments: [production]
+
+input_controls:
+  detect:
+    - prompt_injection
+    - jailbreak
+    - context_stuffing
+    - data_exfiltration
+  sanitize:
+    - PII
+    - credentials
+    - internal_system_refs
+  max_context_tokens: 16000
+  max_prompt_tokens: 4000
+  require_user_auth: true
+  language_filter: [en]
+
+model_controls:
+  allow_tools:
+    - document_search
+    - knowledge_base_lookup
+    - form_assistance
+  deny_tools:
+    - code_execution
+    - file_write
+    - external_api
+    - email_send
+    - database_write
+  trust_level: LOW
+  require_human_in_loop:
+    - pii_disclosure
+    - legal_determination
+    - financial_decision
+    - benefit_eligibility
+  allow_code_execution: false
+  allow_external_calls: false
+  max_tool_calls: 15
+  temperature_ceiling: 0.3  # Low temperature for consistency in gov context
+
+output_controls:
+  block:
+    - SSN
+    - credentials
+    - PII
+    - financial
+  redact:
+    - date_of_birth
+    - phone_number
+    - email_address
+  require:
+    - source_attribution
+    - disclaimer
+    - confidence_score
+  deny_topics:
+    - classified_information
+    - law_enforcement_tactics
+  max_response_tokens: 1500
+  tone_enforcement: formal
+  hallucination_threshold: 0.10  # Strict for government use
+  deny_formats:
+    - executable_code
+    - shell_commands
+
+audit:
+  log_level: FULL
+  format: OSCAL
+  retention_days: 3650  # 10 years for federal records
+  compliance:
+    - FedRAMP-Moderate
+    - NIST-AI-RMF
+  pii_in_logs: false
+  evidence_export: true
+  alert_on_violation: true
+  alert_channels: [siem, pagerduty]
+
+enforcement:
+  engine: OpenLSP
+  on_violation: BLOCK
+  on_detection: ALERT
+  fallback: DENY
+
+metadata:
+  tags: [fedramp, government, nist, moderate-baseline]
+  review_cycle: quarterly
+  last_reviewed: '2025-01-15'
+  approved_by: ISSO
