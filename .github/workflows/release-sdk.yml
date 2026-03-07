@@ -43,9 +43,9 @@ jobs:
       - name: Read and validate VERSION
         id: version
         run: |
-          VERSION=$(tr -d '[:space:]' < sdk/VERSION)
+          VERSION=$(python3 -c "import tomllib; f=open('sdk/pyproject.toml','rb'); d=tomllib.load(f); print(d['project']['version'])")
           if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::error::sdk/VERSION '$VERSION' is not valid semver"
+            echo "::error::sdk/pyproject.toml version '$VERSION' is not valid semver"
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
