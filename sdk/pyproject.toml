@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "opengpl-sdk"
-version = "0.1.0"
+version = "0.1.1"
 description = "The SDK for OpenGPL policy files — enforcement, authoring, and testing"
 readme = "README.md"
 requires-python = ">=3.11"
