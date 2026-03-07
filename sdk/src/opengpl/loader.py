@@ -12,7 +12,7 @@ def _get_schema(version: str) -> dict:
     if schema_path.exists():
         return json.loads(schema_path.read_text())
     import urllib.request
-    url = f"https://opengpl.org/schemas/v{version}/opengpl.schema.json"
+    url = f"https://opengpl.org/schema/v{version}/schema.json"
     return json.loads(urllib.request.urlopen(url).read())
 
 

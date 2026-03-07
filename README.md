@@ -203,7 +203,7 @@ opengpl/
 The OpenGPL JSON Schema is published at:
 
 ```text
-https://opengpl.org/schemas/v0.1/opengpl.schema.json
+https://opengpl.org/schema/v0.1/schema.json
 ```
 
 > **Note:** This URL is live once the `v0.1.0` release is published via the release workflow.
@@ -215,7 +215,7 @@ https://opengpl.org/schemas/v0.1/opengpl.schema.json
 Install the [YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) and add this comment to the top of any policy file:
 
 ```yaml
-# yaml-language-server: $schema=https://opengpl.org/schemas/v0.1/opengpl.schema.json
+# yaml-language-server: $schema=https://opengpl.org/schema/v0.1/schema.json
 opengpl: '0.1'
 policy: my-agent-policy
 version: '1.0.0'
@@ -229,7 +229,7 @@ You will get auto-complete and inline validation errors as you type — no insta
 pip install jsonschema pyyaml
 python3 -c "
 import yaml, jsonschema, urllib.request, json
-schema = json.loads(urllib.request.urlopen('https://opengpl.org/schemas/v0.1/opengpl.schema.json').read())
+schema = json.loads(urllib.request.urlopen('https://opengpl.org/schema/v0.1/schema.json').read())
 jsonschema.validate(yaml.safe_load(open('my-policy.gpl')), schema)
 print('Policy valid')
 "
