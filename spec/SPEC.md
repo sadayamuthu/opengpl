@@ -36,7 +36,7 @@ Governance Policy Language — Full Technical Specification
 
 ## 1. Abstract
 
-OpenGPL (Governance Policy Language) is an open, declarative policy language purpose-built for generative AI systems. It defines how AI agents behave, what resources they can access, what they can produce, and how they demonstrate compliance — at runtime and at rest.
+OpenGPL (Governance Policy Language) is an open, declarative policy language purpose-built for generative AI systems and dynamic systems. It defines how AI agents behave, what resources they can access, what they can produce, and how they demonstrate compliance — at runtime and at rest.
 
 Existing policy frameworks such as OPA/Rego, AWS Cedar, and HashiCorp Sentinel were designed for deterministic systems where inputs and outputs are fully known. Generative AI introduces stochastic outputs, contextual reasoning, multi-agent trust hierarchies, and probabilistic risk — none of which existing policy languages address natively.
 
@@ -52,7 +52,7 @@ This document defines the OpenGPL v0.1 specification, including syntax, schema, 
 
 The rapid deployment of large language models (LLMs) and generative AI agents into enterprise and government environments has outpaced the development of policy and governance tooling designed for these systems.
 
-In deterministic systems, a policy evaluation is binary — a request either matches a rule or it does not. In generative AI systems, outputs are probabilistic, context-dependent, and semantically rich. A policy that says "block requests containing PII" must now evaluate whether a model's natural language response *inadvertently* reveals PII — a fundamentally different problem.
+In deterministic systems, a policy evaluation is binary — a request either matches a rule or it does not. In generative AI and dynamic systems, outputs are probabilistic, context-dependent, and semantically rich. A policy that says "block requests containing PII" must now evaluate whether a model's natural language response *inadvertently* reveals PII — a fundamentally different problem.
 
 ### 2.2 The Gap OpenGPL Fills
 
@@ -62,7 +62,7 @@ In deterministic systems, a policy evaluation is binary — a request either mat
 | AWS Cedar | App authorization | None | None |
 | HashiCorp Sentinel | IaC / Terraform | None | None |
 | NeMo Guardrails | LLM runtime rails | Partial | None |
-| **OpenGPL v0.1** | **Generative AI systems** | **Native** | **OSCAL / FedRAMP** |
+| **OpenGPL v0.1** | **Generative AI and dynamic systems** | **Native** | **OSCAL / FedRAMP** |
 
 > **Note:** In August 2025, Apple hired the maintainers of OPA with plans to sunset enterprise OPA offerings — further validating the need for a purpose-built AI policy language with neutral governance.
 

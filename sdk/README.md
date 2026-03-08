@@ -4,7 +4,7 @@
 
 ## Python SDK for OpenGPL Policy Enforcement
 
-The official Python library and CLI for [OpenGPL](https://opengpl.org) — enforce generative AI policies at runtime
+The official Python library and CLI for [OpenGPL](https://opengpl.org) — enforce generative AI and dynamic system policies at runtime
 
 [![PyPI](https://img.shields.io/pypi/v/opengpl-sdk?style=flat-square)](https://pypi.org/project/opengpl-sdk/)
 [![Python](https://img.shields.io/pypi/pyversions/opengpl-sdk?style=flat-square)](https://pypi.org/project/opengpl-sdk/)
