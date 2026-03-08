@@ -4,7 +4,7 @@
 
 # OpenGPL
 
-## Generative Policy Language
+## Governance Policy Language
 
 The open policy language for generative AI systems
 
@@ -25,7 +25,7 @@ The open policy language for generative AI systems
 
 ## What is OpenGPL?
 
-OpenGPL (Generative Policy Language) is an open, declarative policy language purpose-built for generative AI systems. It defines **how AI agents behave**, what resources they can access, what they can produce, and how they demonstrate compliance — at runtime and at rest.
+OpenGPL (Governance Policy Language) is an open, declarative policy language purpose-built for generative AI systems. It defines **how AI agents behave**, what resources they can access, what they can produce, and how they demonstrate compliance — at runtime and at rest.
 
 ```yaml
 opengpl: '0.1'
