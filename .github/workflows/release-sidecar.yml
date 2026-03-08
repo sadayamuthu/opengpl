@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'sidecar/**'
+  workflow_dispatch:
 
 permissions:
   contents: write
