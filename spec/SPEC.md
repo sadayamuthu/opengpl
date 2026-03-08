@@ -1,12 +1,12 @@
 # OpenGPL v0.1 Specification
 
-Generative Policy Language — Full Technical Specification
+Governance Policy Language — Full Technical Specification
 
 ---
 
 | Field | Value |
 |---|---|
-| **Title** | OpenGPL — Generative Policy Language Specification |
+| **Title** | OpenGPL — Governance Policy Language Specification |
 | **Version** | 0.1 |
 | **Status** | PUBLIC DRAFT — Community Review Open |
 | **Published** | March 2025 |
@@ -36,7 +36,7 @@ Generative Policy Language — Full Technical Specification
 
 ## 1. Abstract
 
-OpenGPL (Generative Policy Language) is an open, declarative policy language purpose-built for generative AI systems. It defines how AI agents behave, what resources they can access, what they can produce, and how they demonstrate compliance — at runtime and at rest.
+OpenGPL (Governance Policy Language) is an open, declarative policy language purpose-built for generative AI systems. It defines how AI agents behave, what resources they can access, what they can produce, and how they demonstrate compliance — at runtime and at rest.
 
 Existing policy frameworks such as OPA/Rego, AWS Cedar, and HashiCorp Sentinel were designed for deterministic systems where inputs and outputs are fully known. Generative AI introduces stochastic outputs, contextual reasoning, multi-agent trust hierarchies, and probabilistic risk — none of which existing policy languages address natively.
 
