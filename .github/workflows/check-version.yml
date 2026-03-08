@@ -25,7 +25,6 @@ jobs:
           filters: |
             spec:
               - 'spec/VERSION'
-              - 'spec/schemas/**'
             sdk:
               - 'sdk/pyproject.toml'
               - 'sdk/src/**'
