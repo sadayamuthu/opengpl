@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://opengpl.org/schemas/v0.1/opengpl.schema.json",
+  "$id": "https://opengpl.org/schema/v0.1/schema.json",
   "title": "OpenGPL v0.1 Policy Schema",
   "description": "JSON Schema for validating OpenGPL v0.1 policy documents",
   "type": "object",

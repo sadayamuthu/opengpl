@@ -1,1 +1,12 @@
-docs/plans/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+.env
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+docs/1

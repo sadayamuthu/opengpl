@@ -1,12 +1,12 @@
 # OpenGPL v0.1 Specification
 
-Generative Policy Language — Full Technical Specification
+Governance Policy Language — Full Technical Specification
 
 ---
 
 | Field | Value |
 |---|---|
-| **Title** | OpenGPL — Generative Policy Language Specification |
+| **Title** | OpenGPL — Governance Policy Language Specification |
 | **Version** | 0.1 |
 | **Status** | PUBLIC DRAFT — Community Review Open |
 | **Published** | March 2025 |
@@ -36,7 +36,7 @@ Generative Policy Language — Full Technical Specification
 
 ## 1. Abstract
 
-OpenGPL (Generative Policy Language) is an open, declarative policy language purpose-built for generative AI systems. It defines how AI agents behave, what resources they can access, what they can produce, and how they demonstrate compliance — at runtime and at rest.
+OpenGPL (Governance Policy Language) is an open, declarative policy language purpose-built for generative AI systems and dynamic systems. It defines how AI agents behave, what resources they can access, what they can produce, and how they demonstrate compliance — at runtime and at rest.
 
 Existing policy frameworks such as OPA/Rego, AWS Cedar, and HashiCorp Sentinel were designed for deterministic systems where inputs and outputs are fully known. Generative AI introduces stochastic outputs, contextual reasoning, multi-agent trust hierarchies, and probabilistic risk — none of which existing policy languages address natively.
 
@@ -52,7 +52,7 @@ This document defines the OpenGPL v0.1 specification, including syntax, schema, 
 
 The rapid deployment of large language models (LLMs) and generative AI agents into enterprise and government environments has outpaced the development of policy and governance tooling designed for these systems.
 
-In deterministic systems, a policy evaluation is binary — a request either matches a rule or it does not. In generative AI systems, outputs are probabilistic, context-dependent, and semantically rich. A policy that says "block requests containing PII" must now evaluate whether a model's natural language response *inadvertently* reveals PII — a fundamentally different problem.
+In deterministic systems, a policy evaluation is binary — a request either matches a rule or it does not. In generative AI and dynamic systems, outputs are probabilistic, context-dependent, and semantically rich. A policy that says "block requests containing PII" must now evaluate whether a model's natural language response *inadvertently* reveals PII — a fundamentally different problem.
 
 ### 2.2 The Gap OpenGPL Fills
 
@@ -62,7 +62,7 @@ In deterministic systems, a policy evaluation is binary — a request either mat
 | AWS Cedar | App authorization | None | None |
 | HashiCorp Sentinel | IaC / Terraform | None | None |
 | NeMo Guardrails | LLM runtime rails | Partial | None |
-| **OpenGPL v0.1** | **Generative AI systems** | **Native** | **OSCAL / FedRAMP** |
+| **OpenGPL v0.1** | **Generative AI and dynamic systems** | **Native** | **OSCAL / FedRAMP** |
 
 > **Note:** In August 2025, Apple hired the maintainers of OPA with plans to sunset enterprise OPA offerings — further validating the need for a purpose-built AI policy language with neutral governance.
 
@@ -71,7 +71,7 @@ In deterministic systems, a policy evaluation is binary — a request either mat
 OpenGPL v0.1 covers:
 
 - Policy syntax and schema for governing LLM input, model behavior, tool access, and output
-- Runtime enforcement model via OpenGPL-compatible runtimes (for example the `opengpl-runtime` reference implementation)
+- Runtime enforcement model via OpenGPL-compatible runtimes (for example the `opengpl-sdk` reference implementation)
 - Compliance output mapping to NIST AI RMF, FedRAMP Moderate, HIPAA, and EU AI Act
 - Integration patterns for LangChain, AutoGen, CrewAI, and direct API usage
 - Versioning and governance model for the OpenGPL standard
@@ -135,7 +135,7 @@ A policy is composed of four control blocks, each governing a distinct phase of 
 
 ### 4.3 Enforcement Engine
 
-OpenGPL policies are executed by **OpenGPL-compatible runtimes**, such as the reference `opengpl-runtime` Python package or other enforcement engines that implement the OpenGPL runtime interface. A runtime acts as a Policy Enforcement Point (PEP) that intercepts LLM requests and responses, evaluates them against applicable policies, and takes the configured enforcement action.
+OpenGPL policies are executed by **OpenGPL-compatible runtimes**, such as the reference `opengpl-sdk` Python package or other enforcement engines that implement the OpenGPL runtime interface. A runtime acts as a Policy Enforcement Point (PEP) that intercepts LLM requests and responses, evaluates them against applicable policies, and takes the configured enforcement action.
 
 Multiple runtimes may exist; OpenGPL deliberately does not mandate a single implementation.
 
@@ -261,7 +261,7 @@ OpenGPL supports single-level policy inheritance via the `extends` field. A chil
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `engine` | string | `opengpl-runtime` | Enforcement engine identifier (e.g., `opengpl-runtime`) |
+| `engine` | string | `opengpl-sdk` | Enforcement engine identifier (e.g., `opengpl-sdk`) |
 | `on_violation` | enum | `LOG` | Action on policy violation (see [Violation Actions](#72-violation-actions)) |
 | `on_detection` | enum | `ALERT` | Action on threat detection |
 | `fallback` | enum | `DENY` | Action when enforcement engine is unavailable |
@@ -289,7 +289,7 @@ audit:
   compliance: [SOC2]
 
 enforcement:
-  engine: opengpl-runtime
+  engine: opengpl-sdk
   on_violation: LOG
 ```
 
@@ -387,7 +387,7 @@ audit:
   alert_channels: [pagerduty, siem]
 
 enforcement:
-  engine: opengpl-runtime
+  engine: opengpl-sdk
   on_violation: BLOCK
   on_detection: ALERT
   fallback: DENY
@@ -587,7 +587,7 @@ When multiple policies apply to the same agent or context:
 
 ## 9. Integration Reference
 
-### 9.1 Python SDK (`opengpl-runtime`)
+### 9.1 Python SDK (`opengpl-sdk`)
 
 ```python
 from opengpl import PolicyEngine
@@ -627,7 +627,7 @@ llm = ChatOpenAI(callbacks=[callback])
 
 ---
 
-### 9.3 Validation API (`opengpl-runtime`)
+### 9.3 Validation API (`opengpl-sdk`)
 
 ```bash
 # Validate a policy via the reference validation API

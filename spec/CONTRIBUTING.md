@@ -1,6 +1,6 @@
 # Contributing to OpenGPL
 
-Thank you for your interest in contributing to OpenGPL — the open policy language for generative AI systems.
+Thank you for your interest in contributing to OpenGPL — the open policy language for generative AI systems and dynamic systems.
 
 OpenGPL is an **OpenAstra open standard**, maintained at [openastra.org](https://openastra.org). This document explains how to contribute to the specification, schema, examples, and tooling.
 

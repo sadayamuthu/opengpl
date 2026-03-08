@@ -1,0 +1,131 @@
+name: Release Sidecar
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'sidecar/**'
+  workflow_dispatch:
+    inputs:
+      skip_tag_check:
+        description: 'Skip tag uniqueness check (use when re-releasing after a registry outage)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-and-push:
+    name: Build and push Docker image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Read and validate VERSION
+        id: version
+        run: |
+          VERSION=$(tr -d '[:space:]' < sidecar/VERSION)
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::sidecar/VERSION '$VERSION' is not valid semver"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Check tag uniqueness
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.skip_tag_check }}
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if git ls-remote --tags origin "refs/tags/sidecar-v${VERSION}" | grep -q .; then
+            echo "::error::Tag sidecar-v${VERSION} already exists."
+            exit 1
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Login to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Hub
+        if: ${{ env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != '' }}
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Generate GHCR tags
+        id: ghcr_tags
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          TAGS="ghcr.io/${{ github.repository }}/sidecar:${VERSION}"
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            TAGS="${TAGS},ghcr.io/${{ github.repository }}/sidecar:latest"
+          fi
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push to GHCR
+        id: build
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+        with:
+          context: .
+          file: sidecar/Dockerfile
+          push: true
+          tags: ${{ steps.ghcr_tags.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Push to Docker Hub
+        if: ${{ env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != '' }}
+        continue-on-error: true
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          docker buildx imagetools create \
+            --tag "opengpl/sidecar:${VERSION}" \
+            "${{ steps.build.outputs.imageid }}"
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            docker buildx imagetools create \
+              --tag "opengpl/sidecar:latest" \
+              "${{ steps.build.outputs.imageid }}"
+          fi
+
+      - name: Generate release body
+        id: release_body
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          {
+            echo "body<<EOF"
+            echo "Docker images published:"
+            echo "- \`docker pull ghcr.io/${{ github.repository }}/sidecar:${VERSION}\`"
+            echo "- \`docker pull ghcr.io/${{ github.repository }}/sidecar:latest\`"
+            if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_TOKEN" ]; then
+              echo ""
+              echo "Also available on Docker Hub (if credentials are configured with push access):"
+              echo "- \`docker pull opengpl/sidecar:${VERSION}\`"
+              echo "- \`docker pull opengpl/sidecar:latest\`"
+            fi
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        with:
+          tag_name: sidecar-v${{ steps.version.outputs.version }}
+          name: "opengpl/sidecar v${{ steps.version.outputs.version }}"
+          generate_release_notes: true
+          body: ${{ steps.release_body.outputs.body }}
