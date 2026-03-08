@@ -24,11 +24,14 @@ jobs:
         with:
           filters: |
             spec:
-              - 'spec/**'
+              - 'spec/VERSION'
             sdk:
-              - 'sdk/**'
+              - 'sdk/pyproject.toml'
+              - 'sdk/src/**'
             sidecar:
-              - 'sidecar/**'
+              - 'sidecar/VERSION'
+              - 'sidecar/*.py'
+              - 'sidecar/Dockerfile'
 
   check-spec-version:
     name: Verify spec/VERSION bumped

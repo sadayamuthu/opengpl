@@ -63,7 +63,7 @@ jobs:
           DEPLOY_TOKEN: ${{ secrets.OPENGPL_ORG_DEPLOY_TOKEN }}
         run: |
           VERSION=${{ steps.version.outputs.version }}
-          SCHEMA_DIR="schemas/v$(echo $VERSION | cut -d. -f1-2)"
+          SCHEMA_DIR="schema/v$(echo $VERSION | cut -d. -f1-2)"
 
           # Validate schema files exist
           if ! ls spec/schemas/opengpl-v*.json 1>/dev/null 2>&1; then
@@ -76,8 +76,8 @@ jobs:
 
           # Copy schema files into versioned directory
           mkdir -p /tmp/opengpl-org/${SCHEMA_DIR}
-          cp spec/schemas/opengpl-v*.json /tmp/opengpl-org/${SCHEMA_DIR}/opengpl.schema.json
-          cp spec/schemas/opengpl-v*.yaml /tmp/opengpl-org/${SCHEMA_DIR}/opengpl.schema.yaml 2>/dev/null || true
+          cp spec/schemas/opengpl-v*.json /tmp/opengpl-org/${SCHEMA_DIR}/schema.json
+          cp spec/schemas/opengpl-v*.yaml /tmp/opengpl-org/${SCHEMA_DIR}/schema.yaml 2>/dev/null || true
 
           # Commit and push if anything changed
           cd /tmp/opengpl-org

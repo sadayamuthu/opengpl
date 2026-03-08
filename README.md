@@ -4,9 +4,9 @@
 
 # OpenGPL
 
-## Generative Policy Language
+## Governance Policy Language
 
-The open policy language for generative AI systems
+The open policy language for generative AI systems and dynamic systems
 
 [![Version](https://img.shields.io/badge/version-v0.1--draft-blue?style=flat-square)](https://github.com/sadayamuthu/opengpl/releases)
 [![Status](https://img.shields.io/badge/status-Public%20Draft-orange?style=flat-square)](https://github.com/sadayamuthu/opengpl/blob/main/spec/SPEC.md)
@@ -25,7 +25,7 @@ The open policy language for generative AI systems
 
 ## What is OpenGPL?
 
-OpenGPL (Generative Policy Language) is an open, declarative policy language purpose-built for generative AI systems. It defines **how AI agents behave**, what resources they can access, what they can produce, and how they demonstrate compliance — at runtime and at rest.
+OpenGPL (Governance Policy Language) is an open, declarative policy language purpose-built for generative AI systems and dynamic systems. It defines **how AI agents behave**, what resources they can access, what they can produce, and how they demonstrate compliance — at runtime and at rest.
 
 ```yaml
 opengpl: '0.1'
@@ -203,7 +203,7 @@ opengpl/
 The OpenGPL JSON Schema is published at:
 
 ```text
-https://opengpl.org/schemas/v0.1/opengpl.schema.json
+https://opengpl.org/schema/v0.1/schema.json
 ```
 
 > **Note:** This URL is live once the `v0.1.0` release is published via the release workflow.
@@ -215,7 +215,7 @@ https://opengpl.org/schemas/v0.1/opengpl.schema.json
 Install the [YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) and add this comment to the top of any policy file:
 
 ```yaml
-# yaml-language-server: $schema=https://opengpl.org/schemas/v0.1/opengpl.schema.json
+# yaml-language-server: $schema=https://opengpl.org/schema/v0.1/schema.json
 opengpl: '0.1'
 policy: my-agent-policy
 version: '1.0.0'
@@ -229,7 +229,7 @@ You will get auto-complete and inline validation errors as you type — no insta
 pip install jsonschema pyyaml
 python3 -c "
 import yaml, jsonschema, urllib.request, json
-schema = json.loads(urllib.request.urlopen('https://opengpl.org/schemas/v0.1/opengpl.schema.json').read())
+schema = json.loads(urllib.request.urlopen('https://opengpl.org/schema/v0.1/schema.json').read())
 jsonschema.validate(yaml.safe_load(open('my-policy.gpl')), schema)
 print('Policy valid')
 "
