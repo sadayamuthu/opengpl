@@ -1,0 +1,20 @@
+# OpenGPL v0.1 — Minimal Policy Example
+
+opengpl: '0.1'
+policy: minimal-agent
+version: '1.0.0'
+description: The simplest valid OpenGPL policy — a starting point
+status: ACTIVE
+owner: security-team
+
+applies_to:
+  models: ['*']
+  contexts: [general]
+
+audit:
+  log_level: SUMMARY
+  compliance: [SOC2]
+
+enforcement:
+  engine: OpenLSP
+  on_violation: LOG

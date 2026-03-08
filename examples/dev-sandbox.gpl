@@ -1,0 +1,66 @@
+# OpenGPL v0.1 — Development Sandbox Example
+# Relaxed controls for internal development and testing.
+# Inherits from an org baseline but overrides for developer productivity.
+#
+# WARNING: Never use this policy in production environments.
+# Maintained by OpenAstra — openastra.org/opengpl
+
+opengpl: '0.1'
+policy: dev-sandbox-agent
+version: '1.0.0'
+description: >
+  Developer sandbox policy — relaxed controls for internal testing
+  and development. Inherits from org-baseline-policy but removes
+  blocking enforcement to enable fast iteration.
+  NOT FOR PRODUCTION USE.
+status: ACTIVE
+owner: engineering-team
+extends: org-baseline-policy  # Inherits all parent controls
+
+applies_to:
+  models: ['*']               # Any model in dev
+  agents: [dev-*]             # All agents prefixed with 'dev-'
+  contexts: [development, testing, sandbox]
+  environments: [development] # Strictly development only
+
+# Override only what differs from the parent baseline
+input_controls:
+  detect:
+    - prompt_injection         # Still detect — useful signal even in dev
+    - jailbreak
+  max_context_tokens: 128000  # No limit in dev — test edge cases freely
+  require_user_auth: false    # Auth not required in local dev
+
+model_controls:
+  allow_tools:
+    - '*'                     # All tools permitted in dev sandbox
+  trust_level: HIGH
+  allow_code_execution: true  # Code execution permitted in sandbox
+  allow_external_calls: true  # External calls permitted in sandbox
+  max_tool_calls: 100
+  temperature_ceiling: 2.0   # No temperature limit in dev
+
+output_controls:
+  block: []                   # No blocking in dev — observe freely
+  redact: []
+  deny_topics: []
+  max_response_tokens: 8000
+  hallucination_threshold: 0.90  # Very lenient — observe model behavior
+
+audit:
+  log_level: DEBUG            # Full debug logging in dev
+  format: JSON
+  retention_days: 30          # Short retention for dev logs
+  compliance: []              # No compliance requirements in dev
+  alert_on_violation: false   # No alerts in dev — avoid noise
+
+enforcement:
+  engine: OpenLSP
+  on_violation: LOG           # Log only — never block in dev
+  on_detection: LOG
+  fallback: ALLOW             # Allow even if engine unavailable in dev
+
+metadata:
+  tags: [development, sandbox, non-production, testing]
+  review_cycle: annual
+  approved_by: engineering-lead

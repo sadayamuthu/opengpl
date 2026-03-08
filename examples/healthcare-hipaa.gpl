@@ -1,0 +1,117 @@
+# OpenGPL v0.1 — Healthcare / HIPAA Example
+# Patient-facing customer service agent for an outpatient healthcare portal.
+# Enforces HIPAA Technical Safeguards and restricts clinical advice.
+#
+# Compliance: HIPAA, SOC2, NIST-AI-RMF
+# Maintained by OpenAstra — openastra.org/opengpl
+
+opengpl: '0.1'
+policy: healthcare-customer-service
+version: '2.1.0'
+description: >
+  Governs the patient-facing customer service AI agent for an outpatient
+  healthcare portal. Enforces HIPAA safeguards, restricts clinical advice,
+  and requires human review for medical and billing escalations.
+status: ACTIVE
+owner: healthcare-compliance-team
+extends: org-baseline-policy
+
+applies_to:
+  models:
+    - gpt-4o
+    - claude-3-5-sonnet
+  agents:
+    - patient-portal-bot
+  contexts:
+    - appointment-booking
+    - billing-inquiry
+    - general-health-info
+  environments: [production]
+  effective_from: '2025-01-01'
+
+input_controls:
+  detect:
+    - prompt_injection
+    - jailbreak
+    - role_confusion
+    - data_exfiltration
+  sanitize:
+    - PII
+    - credentials
+  max_context_tokens: 8000
+  max_prompt_tokens: 2000
+  require_user_auth: true   # Patient must be authenticated via OpenID.ai
+  language_filter: [en, es] # English and Spanish
+
+model_controls:
+  allow_tools:
+    - appointment_search
+    - appointment_book
+    - billing_lookup
+    - faq_retrieval
+    - provider_directory
+  deny_tools:
+    - code_execution
+    - file_write
+    - external_api
+    - email_send
+    - database_write
+    - patient_record_write
+  trust_level: LOW
+  require_human_in_loop:
+    - medication_question       # Any question about medications
+    - diagnostic_inquiry        # Any symptom or diagnosis question
+    - billing_dispute_above_500 # Billing disputes over $500
+    - urgent_medical_concern    # Any urgent or emergency language
+  allow_code_execution: false
+  allow_external_calls: false
+  max_tool_calls: 10
+  temperature_ceiling: 0.3    # Low variance for clinical-adjacent context
+
+output_controls:
+  block:
+    - SSN
+    - PHI
+    - credit_card
+    - date_of_birth
+    - biometric
+  redact:
+    - phone_number
+    - email_address
+  deny_topics:
+    - clinical_diagnosis
+    - medication_prescription
+    - surgical_advice
+    - self_harm
+    - emergency_medical_guidance   # Redirect to 911/emergency services instead
+  require:
+    - source_attribution
+    - disclaimer_not_medical_advice
+  max_response_tokens: 800
+  tone_enforcement: supportive
+  hallucination_threshold: 0.10  # Strict — healthcare context
+
+audit:
+  log_level: FULL
+  format: OSCAL
+  retention_days: 2555            # 7 years per HIPAA 45 CFR 164.530(j)
+  compliance:
+    - HIPAA
+    - SOC2
+    - NIST-AI-RMF
+  pii_in_logs: false
+  evidence_export: true           # Auto-assemble OSCAL SSP via ControlGate
+  alert_on_violation: true
+  alert_channels: [pagerduty, siem]
+
+enforcement:
+  engine: OpenLSP
+  on_violation: BLOCK
+  on_detection: ALERT
+  fallback: DENY               # Fail closed if OpenLSP is unavailable
+
+metadata:
+  tags: [healthcare, hipaa, patient-facing, phi]
+  review_cycle: quarterly
+  last_reviewed: '2025-01-15'
+  approved_by: CISO

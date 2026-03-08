@@ -1,0 +1,46 @@
+name: Validate OpenGPL Policies
+
+on:
+  push:
+    paths:
+      - 'examples/**/*.gpl'
+      - 'schema/**'
+  pull_request:
+    paths:
+      - 'examples/**/*.gpl'
+      - 'schema/**'
+      - 'SPEC.md'
+
+jobs:
+  validate-examples:
+    name: Validate Example Policies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install jsonschema pyyaml
+
+      - name: Validate all example policies
+        run: |
+          python scripts/validate_examples.py
+
+  lint-spec:
+    name: Lint Specification Markdown
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint Markdown
+        uses: DavidAnson/markdownlint-cli2-action@v16
+        with:
+          globs: |
+            SPEC.md
+            README.md
+            CONTRIBUTING.md
