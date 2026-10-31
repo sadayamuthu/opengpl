@@ -1,0 +1,15 @@
+# The sidecar image is built from the repository root (it copies sdk/ and
+# sidecar/), so keep everything else out of the build context.
+.git
+.github
+.worktrees
+.superpowers
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.ruff_cache
+**/*.egg-info
+sdk/tests
+spec
+*.md
+!sdk/README.md
