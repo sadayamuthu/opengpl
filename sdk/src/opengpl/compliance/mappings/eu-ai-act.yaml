@@ -1,0 +1,37 @@
+# OpenGPL policy field -> Regulation (EU) 2024/1689 (AI Act) mapping, Chapter III Section 2 (Articles 9-15).
+# Article and paragraph numbers verified against the Official Journal text (OJ L, 2024/1689, 12.7.2024).
+# Article 9 (risk management system), 10 (training-data governance) and 11 (technical documentation)
+# have no policy field that implements them and are deliberately not mapped.
+# Status (enforced/heuristic/declared) is computed from the SDK registry, not here.
+framework: EU-AI-Act-2024-1689
+entries:
+  - control: art-12.1
+    field: audit.log_level
+    when: {in: [STANDARD, FULL, DEBUG]}
+    statement: "audit.log_level is {value}; the runtime automatically records a decision event for every gate evaluation."
+    rationale: "Art. 12(1) requires that the system technically allow automatic recording of events (logs); the runtime writes gate decision records. It does not by itself meet the Art. 12(3) minimum content for Annex III point 1(a) systems."
+  - control: art-13.1
+    field: output_controls.require
+    when: {any_of: [source_attribution, confidence_score]}
+    statement: "output_controls.require includes {value}; the policy declares that responses must carry this information."
+    rationale: "Art. 13(1) (operation sufficiently transparent to enable deployers to interpret the output): cited sources or a confidence indicator help interpret each output. Policy declaration; the SDK does not check responses for them. Instructions for use (Art. 13(2)-(3)) are not covered."
+  - control: art-14.4
+    field: model_controls.require_human_in_loop
+    when: {present: true}
+    statement: "model_controls.require_human_in_loop is set ({value}); the policy declares the conditions that require human approval before the agent proceeds."
+    rationale: "Art. 14(4)(d): enables the overseer to decide not to use, or to disregard or override, the output in a given situation. Policy declaration; the reference SDK does not pause for approval."
+  - control: art-15.1
+    field: output_controls.hallucination_threshold
+    when: {present: true}
+    statement: "output_controls.hallucination_threshold is {value}; the policy declares the maximum acceptable hallucination risk score for a response."
+    rationale: "Art. 15(1) (an appropriate level of accuracy): the field declares an accuracy criterion. It does not establish that the level is appropriate, nor measure it; the SDK does not score hallucination, and Art. 15(3) declaration in the instructions for use is not covered."
+  - control: art-15.4
+    field: enforcement.fallback
+    when: {in: [DENY, BLOCK]}
+    statement: "enforcement.fallback is {value}; the policy declares that requests are refused when the enforcement engine is unavailable."
+    rationale: "Art. 15(4), second subparagraph: robustness may be achieved through 'backup or fail-safe plans'; failing closed on an enforcement fault is such a plan. Policy declaration; the SDK does not implement the fallback."
+  - control: art-15.5
+    field: input_controls.detect
+    when: {any_of: [prompt_injection, jailbreak, context_stuffing, role_confusion, data_exfiltration, adversarial_elicitation]}
+    statement: "input_controls.detect includes {value}; the policy declares detection of these attacks on model inputs."
+    rationale: "Art. 15(5), third subparagraph: measures to detect and respond to inputs designed to make the model err (adversarial examples, model evasion) and to confidentiality attacks. Data and model poisoning are not covered."

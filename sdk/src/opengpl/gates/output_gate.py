@@ -19,12 +19,19 @@ class OutputGate:
     def evaluate(self, text: str) -> EvaluationResult:
         blocked_types = self._controls.get("block", [])
         reasons = []
+        evaluated = []
+        fired = []
 
         for dtype in blocked_types:
             pattern = _BLOCK_PATTERNS.get(dtype)
-            if pattern and re.search(pattern, text, re.IGNORECASE):
+            if not pattern:
+                continue
+            rule_id = f"output_controls.block:{dtype}"
+            evaluated.append(rule_id)
+            if re.search(pattern, text, re.IGNORECASE):
+                fired.append(rule_id)
                 reasons.append(f"blocked data type detected: {dtype}")
 
         if reasons:
-            return EvaluationResult.block(reasons)
-        return EvaluationResult.allow()
+            return EvaluationResult.block(reasons, evaluated=evaluated, fired=fired)
+        return EvaluationResult.allow(evaluated=evaluated)

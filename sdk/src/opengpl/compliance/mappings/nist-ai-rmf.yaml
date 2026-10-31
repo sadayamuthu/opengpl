@@ -1,0 +1,36 @@
+# OpenGPL policy field -> NIST AI RMF 1.0 (NIST AI 100-1) subcategory mapping.
+# Subcategory IDs and text verified against NIST AI 100-1, Tables 1-4.
+# An entry exists only if the named policy field supports that specific subcategory.
+# Status (enforced/heuristic/declared) is computed from the SDK registry, not here.
+framework: NIST-AI-RMF-1.0
+entries:
+  - control: GOVERN 1.5
+    field: metadata.review_cycle
+    when: {present: true}
+    statement: "metadata.review_cycle is {value}; the policy declares how often this policy is reviewed."
+    rationale: "GOVERN 1.5 asks that periodic review be planned, 'including determining the frequency of periodic review'; the field records that frequency for this policy only. Policy declaration; the SDK does not schedule or track reviews."
+  - control: MAP 1.5
+    field: output_controls.hallucination_threshold
+    when: {present: true}
+    statement: "output_controls.hallucination_threshold is {value}; the policy declares the maximum acceptable hallucination risk score."
+    rationale: "MAP 1.5 (risk tolerances are determined and documented): the field documents a quantified tolerance for one risk, hallucination. Policy declaration; it is not an organization-wide tolerance and the SDK does not score hallucination."
+  - control: MAP 3.5
+    field: model_controls.require_human_in_loop
+    when: {present: true}
+    statement: "model_controls.require_human_in_loop is set ({value}); the policy declares the conditions that require human approval before the agent proceeds."
+    rationale: "MAP 3.5 (processes for human oversight are defined and documented): the field defines when human approval is required. Policy declaration; the reference SDK does not pause for approval."
+  - control: MEASURE 2.4
+    field: audit.log_level
+    when: {in: [STANDARD, FULL, DEBUG]}
+    statement: "audit.log_level is {value}; the runtime writes a decision record for every gate evaluation in production."
+    rationale: "MEASURE 2.4 (functionality and behavior of the AI system and its components are monitored in production): gate decision records capture what the input and output gates allowed or blocked."
+  - control: MANAGE 1.3
+    field: input_controls.detect
+    when: {any_of: [prompt_injection, jailbreak, context_stuffing, role_confusion, data_exfiltration, adversarial_elicitation]}
+    statement: "input_controls.detect includes {value}; the policy declares detection of these attack classes (the response is set by enforcement.on_detection)."
+    rationale: "MANAGE 1.3 (responses to high-priority AI risks are developed, planned and documented; options include mitigating): the field declares detection of named input attacks and documents the planned response (enforcement.on_detection). It does not perform the prioritization itself (MANAGE 1.2)."
+  - control: MANAGE 4.3
+    field: audit.alert_on_violation
+    when: {"true": true}
+    statement: "audit.alert_on_violation is true; the policy declares that a policy violation raises an alert to the configured recipients."
+    rationale: "MANAGE 4.3 (incidents and errors are communicated to relevant AI actors): violation alerts communicate one class of incident. Policy declaration; the SDK does not send alerts or track incidents."

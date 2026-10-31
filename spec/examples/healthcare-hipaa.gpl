@@ -1,8 +1,8 @@
 # OpenGPL v0.1 — Healthcare / HIPAA Example
 # Patient-facing customer service agent for an outpatient healthcare portal.
-# Enforces HIPAA Technical Safeguards and restricts clinical advice.
+# Its fields map to HIPAA Technical Safeguards (see compliance-mapping.md); it restricts clinical advice.
 #
-# Compliance: HIPAA, SOC2, NIST-AI-RMF
+# Frameworks listed in audit.compliance: HIPAA, SOC2, NIST-AI-RMF
 # Maintained by OpenAstra — openastra.org/opengpl
 
 opengpl: '0.1'
@@ -10,8 +10,8 @@ policy: healthcare-customer-service
 version: '2.1.0'
 description: >
   Governs the patient-facing customer service AI agent for an outpatient
-  healthcare portal. Enforces HIPAA safeguards, restricts clinical advice,
-  and requires human review for medical and billing escalations.
+  healthcare portal. Its fields map to HIPAA safeguards; it restricts clinical
+  advice and requires human review for medical and billing escalations.
 status: ACTIVE
 owner: healthcare-compliance-team
 extends: org-baseline-policy

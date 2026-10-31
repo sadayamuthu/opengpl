@@ -11,13 +11,21 @@ class InputGate:
     def evaluate(self, text: str, context: str | None = None) -> EvaluationResult:
         detections = self._controls.get("detect", [])
         reasons = []
+        evaluated = []
+        fired = []
 
-        if "prompt_injection" in detections and injection.detect_injection(text):
-            reasons.append("prompt_injection detected")
-
-        if "jailbreak" in detections and jailbreak.detect_jailbreak(text):
-            reasons.append("jailbreak attempt detected")
+        for name, detect, reason in (
+            ("prompt_injection", injection.detect_injection, "prompt_injection detected"),
+            ("jailbreak", jailbreak.detect_jailbreak, "jailbreak attempt detected"),
+        ):
+            if name not in detections:
+                continue
+            rule_id = f"input_controls.detect:{name}"
+            evaluated.append(rule_id)
+            if detect(text):
+                fired.append(rule_id)
+                reasons.append(reason)
 
         if reasons:
-            return EvaluationResult.block(reasons)
-        return EvaluationResult.allow()
+            return EvaluationResult.block(reasons, evaluated=evaluated, fired=fired)
+        return EvaluationResult.allow(evaluated=evaluated)

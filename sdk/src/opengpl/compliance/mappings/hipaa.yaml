@@ -1,0 +1,15 @@
+# OpenGPL policy field -> HIPAA Security Rule technical safeguards (45 CFR 164.312) mapping.
+# Paragraph references verified against the eCFR text of 45 CFR 164.312.
+# Status (enforced/heuristic/declared) is computed from the SDK registry, not here.
+framework: HIPAA-45CFR164.312
+entries:
+  - control: 164.312(b)
+    field: audit.log_level
+    when: {in: [STANDARD, FULL, DEBUG]}
+    statement: "audit.log_level is {value}; the runtime records a decision for every gate evaluation."
+    rationale: "164.312(b) audit controls: a software mechanism that records activity in a system that uses ePHI. It covers recording only; examining the records is not implemented."
+  - control: 164.312(d)
+    field: input_controls.require_user_auth
+    when: {"true": true}
+    statement: "input_controls.require_user_auth is true; the policy declares that requests must come from an authenticated user."
+    rationale: "164.312(d) person or entity authentication: requires that the identity of the person making a request be verified. Policy declaration; verification is done by the deployment's identity provider, not the SDK."

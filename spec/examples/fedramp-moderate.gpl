@@ -1,12 +1,12 @@
 # OpenGPL v0.1 — FedRAMP Moderate Example
-# Suitable for federal agency AI deployments requiring FedRAMP Moderate authorization
+# Example policy for an AI agent inside a FedRAMP Moderate authorization boundary.
 
 opengpl: '0.1'
 policy: fedramp-moderate-agent
 version: '1.0.0'
 description: >
-  Governs AI agent deployments within a FedRAMP Moderate authorization boundary.
-  Enforces NIST SP 800-53 Rev 5 controls applicable to LLM systems.
+  Example policy for an AI agent inside a FedRAMP Moderate authorization boundary;
+  its fields map to NIST SP 800-53 Rev 5 controls (see compliance-mapping.md).
 status: ACTIVE
 owner: isso-team
 
