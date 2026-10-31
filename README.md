@@ -227,8 +227,8 @@ frameworks are mapping tables only (see
 | HIPAA Technical Safeguards | §164.312(b) and (d) |
 | EU AI Act (High-Risk) | Articles 12, 13, 14, 15 |
 | SOC 2 (Trust Service Criteria) | Common Criteria (CC6, CC7) |
-| ISO/IEC 42001 | Partial (planned for v0.2) |
-| India DPDPA | Partial (planned for v0.2) |
+| ISO/IEC 42001 | Partial (planned for spec v0.2) |
+| India DPDPA | Partial (planned for spec v0.2) |
 
 Details: [compliance-mapping.md](./spec/docs/compliance-mapping.md).
 
