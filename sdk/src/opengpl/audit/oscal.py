@@ -1,7 +1,8 @@
 # src/opengpl/audit/oscal.py
 """OSCAL 1.2.3 output: component definitions and assessment results."""
+
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from opengpl.audit.ledger import _now
 from opengpl.compliance.mapping import applicable_controls
@@ -33,8 +34,8 @@ def oscal_now(now: datetime | None = None) -> str:
     if now is None:
         return _now()
     if now.tzinfo is None:
-        now = now.replace(tzinfo=timezone.utc)
-    return now.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        now = now.replace(tzinfo=UTC)
+    return now.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _uuid(key: str) -> str:
@@ -82,33 +83,39 @@ def component_definition(
         for a in in_base:
             rprops = [_prop("implementation-status", a.status.value)]
             rprops += [_prop("policy-field", e) for e in a.evidence]
-            reqs.append({
-                "uuid": _uuid(f"ir:{name}:{version}:{a.control}"),
-                "control-id": a.control,
-                "description": " ".join(a.statements),
-                "props": rprops,
-            })
-        component["control-implementations"] = [{
-            "uuid": _uuid(f"ci:{name}:{version}:{framework}"),
-            "source": base.href,
-            "description": (
-                f"Controls from the NIST SP 800-53 Rev 5 {base.level} baseline addressed by "
-                "fields set in this OpenGPL policy. This lists policy fields mapped to controls; "
-                "it is not an assessment."
-            ),
-            "implemented-requirements": reqs,
-        }]
+            reqs.append(
+                {
+                    "uuid": _uuid(f"ir:{name}:{version}:{a.control}"),
+                    "control-id": a.control,
+                    "description": " ".join(a.statements),
+                    "props": rprops,
+                }
+            )
+        component["control-implementations"] = [
+            {
+                "uuid": _uuid(f"ci:{name}:{version}:{framework}"),
+                "source": base.href,
+                "description": (
+                    f"Controls from the NIST SP 800-53 Rev 5 {base.level} baseline addressed by "
+                    "fields set in this OpenGPL policy. This lists policy fields mapped to controls; "
+                    "it is not an assessment."
+                ),
+                "implemented-requirements": reqs,
+            }
+        ]
 
-    doc = {"component-definition": {
-        "uuid": _uuid(f"cd:{name}:{version}:{framework}"),
-        "metadata": {
-            "title": f"OpenGPL policy {name} {version} ({framework})",
-            "last-modified": oscal_now(now),
-            "version": version,
-            "oscal-version": OSCAL_VERSION,
-        },
-        "components": [component],
-    }}
+    doc = {
+        "component-definition": {
+            "uuid": _uuid(f"cd:{name}:{version}:{framework}"),
+            "metadata": {
+                "title": f"OpenGPL policy {name} {version} ({framework})",
+                "last-modified": oscal_now(now),
+                "version": version,
+                "oscal-version": OSCAL_VERSION,
+            },
+            "components": [component],
+        }
+    }
     return doc, omitted
 
 
@@ -136,8 +143,12 @@ def assessment_results(
     kept = []
     seen: set[str] = set()
     for d in decisions:  # first occurrence of a decision id wins
-        if (d.get("policy") == name and str(d.get("policy_version")) == version
-                and d.get("gate") != "model" and str(d["id"]) not in seen):
+        if (
+            d.get("policy") == name
+            and str(d.get("policy_version")) == version
+            and d.get("gate") != "model"
+            and str(d["id"]) not in seen
+        ):
             seen.add(str(d["id"]))
             kept.append(d)
 
@@ -152,7 +163,8 @@ def assessment_results(
         fired = d.get("fired") or []
         rule_fields = {r.split(":", 1)[0] for r in evaluated}
         bears = [
-            a.control for a in applied
+            a.control
+            for a in applied
             if "audit.log_level" in a.fields or rule_fields & set(a.fields)
         ]
         props = [_prop("control-id", c) for c in bears]
@@ -161,20 +173,20 @@ def assessment_results(
             _prop("decision-action", str(d["action"])),
             _prop("decision-id", str(d["id"])),
         ]
-        observations.append({
-            "uuid": _uuid("obs:" + str(d["id"])),
-            "title": f"{d['gate']} gate: {d['action']}",
-            "description": (
-                f"Rules evaluated: {', '.join(evaluated) or 'none'}. "
-                f"Rules fired: {', '.join(fired) or 'none'}."
-            ),
-            "methods": ["TEST"],
-            "collected": d["timestamp"],
-            "props": props,
-            "relevant-evidence": [{
-                "description": f"Decision record {d['id']}"
-            }],
-        })
+        observations.append(
+            {
+                "uuid": _uuid("obs:" + str(d["id"])),
+                "title": f"{d['gate']} gate: {d['action']}",
+                "description": (
+                    f"Rules evaluated: {', '.join(evaluated) or 'none'}. "
+                    f"Rules fired: {', '.join(fired) or 'none'}."
+                ),
+                "methods": ["TEST"],
+                "collected": d["timestamp"],
+                "props": props,
+                "relevant-evidence": [{"description": f"Decision record {d['id']}"}],
+            }
+        )
 
     stamps = sorted(d["timestamp"] for d in kept)
     start, end = (stamps[0], stamps[-1]) if stamps else (oscal_now(now),) * 2
@@ -189,29 +201,37 @@ def assessment_results(
         ),
         "start": start,
         "end": end,
-        "reviewed-controls": {"control-selections": [{
-            "include-controls": [{"control-id": a.control} for a in applied]
-        }]},
+        "reviewed-controls": {
+            "control-selections": [
+                {"include-controls": [{"control-id": a.control} for a in applied]}
+            ]
+        },
     }
     if observations:
         result["observations"] = observations
 
-    return {"assessment-results": {
-        "uuid": ar_uuid,
-        "metadata": {
-            "title": f"OpenGPL decision records for {name} {version} ({framework})",
-            "last-modified": oscal_now(now),
-            "version": version,
-            "oscal-version": OSCAL_VERSION,
-        },
-        "import-ap": {"href": f"#{res_uuid}"},
-        "results": [result],
-        "back-matter": {"resources": [{
-            "uuid": res_uuid,
-            "title": "No assessment plan",
-            "description": (
-                "Generated by opengpl-sdk from runtime decision records. "
-                "No assessment plan exists; these are decision records, not an assessment."
-            ),
-        }]},
-    }}
+    return {
+        "assessment-results": {
+            "uuid": ar_uuid,
+            "metadata": {
+                "title": f"OpenGPL decision records for {name} {version} ({framework})",
+                "last-modified": oscal_now(now),
+                "version": version,
+                "oscal-version": OSCAL_VERSION,
+            },
+            "import-ap": {"href": f"#{res_uuid}"},
+            "results": [result],
+            "back-matter": {
+                "resources": [
+                    {
+                        "uuid": res_uuid,
+                        "title": "No assessment plan",
+                        "description": (
+                            "Generated by opengpl-sdk from runtime decision records. "
+                            "No assessment plan exists; these are decision records, not an assessment."
+                        ),
+                    }
+                ]
+            },
+        }
+    }

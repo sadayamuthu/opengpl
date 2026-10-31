@@ -1,5 +1,6 @@
 # src/opengpl/audit/ledger.py
 """JSONL decision log: one record per gate decision."""
+
 from __future__ import annotations
 
 import hashlib
@@ -8,7 +9,7 @@ import os
 import re
 import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Literal
 
 from opengpl.detectors.pii import sanitize_pii
@@ -34,14 +35,20 @@ _CRED = "[REDACTED-CREDENTIAL]"
 _LOG_CREDENTIAL_PATTERNS = (
     # PEM private key blocks; the body stops at the next "-----", so an
     # unterminated block is still redacted up to that point.
-    (r"-----BEGIN [A-Z ]{0,40}PRIVATE KEY-----(?:[^-]|-(?!----)){0,16384}"
-     r"(?:-----END [A-Z ]{0,40}PRIVATE KEY-----)?", _CRED),
+    (
+        r"-----BEGIN [A-Z ]{0,40}PRIVATE KEY-----(?:[^-]|-(?!----)){0,16384}"
+        r"(?:-----END [A-Z ]{0,40}PRIVATE KEY-----)?",
+        _CRED,
+    ),
     # JSON Web Tokens.
     (r"(?<![\w-])eyJ[\w-]{5,4096}\.[\w-]{5,4096}\.[\w-]{0,4096}", _CRED),
     # URL userinfo: keep the scheme and the host.
     (r"(?i)\b([a-z][a-z0-9+.-]{0,31}://)[^\s/@:]{1,256}:[^\s/@]{1,256}@", r"\1" + _CRED + "@"),
     # HTTP Basic and Bearer credentials: keep the header name.
-    (r"(?i)\b(authorization\s{0,16}:\s{0,16})basic\s{1,16}[A-Za-z0-9+/]{1,4096}={0,2}", r"\1" + _CRED),
+    (
+        r"(?i)\b(authorization\s{0,16}:\s{0,16})basic\s{1,16}[A-Za-z0-9+/]{1,4096}={0,2}",
+        r"\1" + _CRED,
+    ),
     (r"(?i)\bbearer\s{1,16}[^\s\",}]{1,4096}", _CRED),
     # Vendor token prefixes.
     (r"(?<![\w-])sk-[A-Za-z0-9_-]{16,256}", _CRED),
@@ -52,8 +59,11 @@ _LOG_CREDENTIAL_PATTERNS = (
     # key: value / key=value / "key": "value". A quoted value is taken whole
     # (up to 4096 characters, or to the end of that run if the quote is never
     # closed), so no tail of a multi-word secret is left behind.
-    (r"(?i)(?:api[_\s-]?key|password|passwd|passphrase|pwd|private[_-]?key|secret|token)"
-     r"[\w-]{0,40}\"?\s{0,16}[:=]\s{0,16}(?:\"[^\"]{0,4096}\"?|[^\s\",}]{1,4096})", _CRED),
+    (
+        r"(?i)(?:api[_\s-]?key|password|passwd|passphrase|pwd|private[_-]?key|secret|token)"
+        r"[\w-]{0,40}\"?\s{0,16}[:=]\s{0,16}(?:\"[^\"]{0,4096}\"?|[^\s\",}]{1,4096})",
+        _CRED,
+    ),
 )
 
 
@@ -71,7 +81,7 @@ def redact_for_log(text: str) -> str:
 
 def _now() -> str:
     epoch = os.environ.get("SOURCE_DATE_EPOCH")
-    dt = datetime.fromtimestamp(int(epoch), timezone.utc) if epoch else datetime.now(timezone.utc)
+    dt = datetime.fromtimestamp(int(epoch), UTC) if epoch else datetime.now(UTC)
     return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
@@ -120,7 +130,9 @@ class DecisionLog:
             "reasons": list(result.reasons),
             "evaluated": list(result.evaluated),
             "fired": list(result.fired),
-            "text_sha256": None if text is None else hashlib.sha256(text.encode("utf-8")).hexdigest(),
+            "text_sha256": None
+            if text is None
+            else hashlib.sha256(text.encode("utf-8")).hexdigest(),
         }
         kept = self._fh is not None or self.max_records != 0
         if kept and text is not None and audit.get("log_level") in ("FULL", "DEBUG"):
@@ -134,7 +146,7 @@ class DecisionLog:
         with self._lock:
             self.records.append(rec)
             if self.max_records is not None and len(self.records) > self.max_records:
-                del self.records[:len(self.records) - self.max_records]
+                del self.records[: len(self.records) - self.max_records]
             if self._fh is not None:
                 self._fh.write(json.dumps(rec) + "\n")
                 self._fh.flush()

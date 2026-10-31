@@ -12,12 +12,16 @@ from opengpl.models import EvaluationResult
 class PolicyEngine:
     """Main entry point for OpenGPL policy enforcement."""
 
-    def __init__(self, policy_path: str, decision_log: str | os.PathLike | DecisionLog | None = None):
+    def __init__(
+        self, policy_path: str, decision_log: str | os.PathLike | DecisionLog | None = None
+    ):
         self.policy = loader.load(policy_path)
         self._input_gate = InputGate(self.policy)
         self._model_gate = ModelGate(self.policy)
         self._output_gate = OutputGate(self.policy)
-        self.decisions = decision_log if isinstance(decision_log, DecisionLog) else DecisionLog(decision_log)
+        self.decisions = (
+            decision_log if isinstance(decision_log, DecisionLog) else DecisionLog(decision_log)
+        )
 
     def check_input(self, text: str, context: str | None = None) -> EvaluationResult:
         """Evaluate input text against input_controls."""

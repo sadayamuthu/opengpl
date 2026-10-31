@@ -1,5 +1,6 @@
 # tests/test_api.py
 from fastapi.testclient import TestClient
+
 from opengpl.api import app
 
 client = TestClient(app)
@@ -33,6 +34,7 @@ def test_validate_valid_policy():
     assert data["valid"] is True
     assert data["errors"] == []
 
+
 def test_validate_invalid_policy():
     response = client.post("/validate", json={"policy": INVALID_POLICY, "version": "0.1"})
     assert response.status_code == 200
@@ -40,10 +42,12 @@ def test_validate_invalid_policy():
     assert data["valid"] is False
     assert len(data["errors"]) > 0
 
+
 def test_schema_versions():
     response = client.get("/schema-versions")
     assert response.status_code == 200
     assert "0.1" in response.json()["versions"]
+
 
 def test_health():
     response = client.get("/health")

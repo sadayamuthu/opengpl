@@ -1,4 +1,5 @@
 """Pinned NIST SP 800-53 Rev 5 reference data (usnistgov/oscal-content v1.6.0)."""
+
 from __future__ import annotations
 
 import json
@@ -23,7 +24,9 @@ class Baseline:
 
 @lru_cache(maxsize=1)
 def _data() -> dict:
-    text = (files("opengpl.compliance") / "data" / "nist_sp800_53r5.json").read_text(encoding="utf-8")
+    text = (files("opengpl.compliance") / "data" / "nist_sp800_53r5.json").read_text(
+        encoding="utf-8"
+    )
     return json.loads(text)
 
 

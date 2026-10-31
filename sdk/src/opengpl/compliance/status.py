@@ -1,5 +1,6 @@
 # src/opengpl/compliance/status.py
 """What the SDK really enforces: enforced, heuristic or declared."""
+
 from collections.abc import Iterable
 from enum import Enum
 

@@ -8,6 +8,7 @@ value known to `opengpl.compliance.mapping.FRAMEWORK_FILES`.
 Usage: python spec/scripts/gen_compliance_mapping.py [--check]
 With --check, nothing is written and the exit code is 1 if the doc is out of date.
 """
+
 from __future__ import annotations
 
 import pathlib
@@ -38,7 +39,7 @@ def _cell(text: str) -> str:
 
 
 def _condition(entry: MappingEntry) -> str:
-    (op, arg), = entry.when.items()
+    ((op, arg),) = entry.when.items()
     if op == "present":
         return "set"
     if op in ("true", "false"):
@@ -54,7 +55,7 @@ def _condition(entry: MappingEntry) -> str:
 
 def _status(entry: MappingEntry) -> str:
     """Weakest status the row can carry, then any stronger statuses and the values that earn them."""
-    (op, arg), = entry.when.items()
+    ((op, arg),) = entry.when.items()
     f = entry.field
     if op == "equals":
         return value_status(f, str(arg)).value
@@ -87,6 +88,7 @@ def render_table(framework: str) -> str:
 
 def render_tables(doc_text: str) -> str:
     """Return doc_text with every generated block replaced by the current mapping table."""
+
     def sub(m: re.Match) -> str:
         fw = m.group("fw")
         if fw not in FRAMEWORK_FILES:
@@ -107,7 +109,9 @@ def main(argv: list[str]) -> int:
     updated = render_tables(current)
     if check:
         if updated != current:
-            print(f"{DOC} is out of date; run spec/scripts/gen_compliance_mapping.py", file=sys.stderr)
+            print(
+                f"{DOC} is out of date; run spec/scripts/gen_compliance_mapping.py", file=sys.stderr
+            )
             return 1
         return 0
     if updated != current:
