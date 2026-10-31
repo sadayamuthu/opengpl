@@ -6,6 +6,7 @@
 [![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fsadayamuthu%2Fopengpl%2Fsidecar-2496ED?logo=docker&logoColor=white)](https://github.com/sadayamuthu/opengpl/pkgs/container/opengpl%2Fsidecar)
 [![Spec](https://img.shields.io/badge/spec-v0.1%20public%20draft-orange)](spec/SPEC.md)
 [![License](https://img.shields.io/github/license/sadayamuthu/opengpl)](LICENSE)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23844061.svg)](https://doi.org/10.5281/zenodo.23844061)
 
 A policy language for AI agents that produces compliance evidence. One
 `.gpl` file says what an agent may take in, what it may produce, which tools
