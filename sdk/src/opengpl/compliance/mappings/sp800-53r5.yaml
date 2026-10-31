@@ -1,0 +1,70 @@
+# OpenGPL policy field -> NIST SP 800-53 Rev 5 control mapping.
+# An entry exists only if the named policy field implements part of the control.
+# Status (enforced/heuristic/declared) is computed from the SDK registry, not here.
+framework: SP800-53r5
+entries:
+  - control: ac-3
+    field: model_controls.allow_tools
+    when: {present: true}
+    statement: "model_controls.allow_tools is set ({value}); the policy declares an allow-list of tools the model may invoke."
+    rationale: "AC-3 access enforcement: the tool allow-list is an approved authorization for the model's access to tools (system resources)."
+  - control: ac-3
+    field: model_controls.deny_tools
+    when: {present: true}
+    statement: "model_controls.deny_tools is set ({value}); the policy declares tools the model may not invoke."
+    rationale: "AC-3 access enforcement: the tool deny-list withholds authorization for specific tools."
+  - control: ac-4
+    field: model_controls.allow_external_calls
+    when: {"false": true}
+    statement: "model_controls.allow_external_calls is false; the policy declares that the model may not send information to external systems."
+    rationale: "AC-4 information flow enforcement: restricts flow of information from the system to connected external systems."
+  - control: ac-6
+    field: model_controls.trust_level
+    when: {in: [UNTRUSTED, LOW]}
+    statement: "model_controls.trust_level is {value}; the policy declares a restricted privilege tier for the model."
+    rationale: "AC-6 least privilege: a low trust tier declares that the model acts with reduced privileges (declaration of posture only)."
+  - control: au-2
+    field: audit.log_level
+    when: {in: [STANDARD, FULL, DEBUG]}
+    statement: "audit.log_level is {value}; the runtime writes a decision record for every gate evaluation."
+    rationale: "AU-2 event logging (item a/c): gate decisions are the event type the system is capable of logging and logs."
+  - control: au-3
+    field: audit.log_level
+    when: {in: [STANDARD, FULL, DEBUG]}
+    statement: "audit.log_level is {value}; each decision record states the gate, the rules evaluated, the outcome and a timestamp."
+    rationale: "AU-3 content of audit records: decision records establish what occurred, when and the outcome."
+  - control: au-11
+    field: audit.retention_days
+    when: {present: true}
+    statement: "audit.retention_days is {value}; the policy declares the audit record retention period."
+    rationale: "AU-11 audit record retention: states the period for which audit records are to be retained."
+  - control: au-12
+    field: audit.log_level
+    when: {in: [STANDARD, FULL, DEBUG]}
+    statement: "audit.log_level is {value}; the runtime generates audit records at each gate evaluation."
+    rationale: "AU-12 audit record generation (item c): generates records for the logged event types with the AU-3 content."
+  - control: ia-2
+    field: input_controls.require_user_auth
+    when: {"true": true}
+    statement: "input_controls.require_user_auth is true; the policy declares that requests must come from an authenticated user."
+    rationale: "IA-2 identification and authentication of organizational users: policy requires users to be authenticated before requests are accepted."
+  - control: sc-7
+    field: model_controls.allow_external_calls
+    when: {"false": true}
+    statement: "model_controls.allow_external_calls is false; the policy declares that the model may not communicate with external systems."
+    rationale: "SC-7 boundary protection (item a/c): limits communications across the system's external interface."
+  - control: si-4
+    field: audit.alert_on_violation
+    when: {"true": true}
+    statement: "audit.alert_on_violation is true; the policy declares that policy violations raise an alert."
+    rationale: "SI-4 system monitoring (items a, g): alerts on detected attacks and indicators of potential attacks."
+  - control: si-10
+    field: input_controls.detect
+    when: {any_of: [prompt_injection, jailbreak, context_stuffing, data_exfiltration]}
+    statement: "input_controls.detect includes {value}; the policy declares checks on the validity of model inputs for these attack classes."
+    rationale: "SI-10 input validation: checks the validity of prompts (information inputs) against the listed attack classes."
+  - control: si-15
+    field: output_controls.block
+    when: {present: true}
+    statement: "output_controls.block is set ({value}); the policy declares output patterns that are blocked."
+    rationale: "SI-15 information output filtering: validates model output against expected content by blocking listed categories."
