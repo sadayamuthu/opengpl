@@ -4,9 +4,9 @@
 
 ## Self-Hosted Policy Enforcement Proxy
 
-A Docker container that enforces OpenGPL policies as an HTTP sidecar — drop it into any architecture without modifying your application code
+A Docker container that enforces OpenGPL policies as an HTTP sidecar — call it from any language over HTTP, before and after your LLM call
 
-[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-opengpl%2Fsidecar-blue?style=flat-square)](https://hub.docker.com/r/opengpl/sidecar)
+[![GHCR](https://img.shields.io/badge/GHCR-sadayamuthu%2Fopengpl%2Fsidecar-blue?style=flat-square)](https://github.com/sadayamuthu/opengpl/pkgs/container/opengpl%2Fsidecar)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-green?style=flat-square)](https://opensource.org/licenses/Apache-2.0)
 [![OpenAstra](https://img.shields.io/badge/Governed%20by-OpenAstra%20Standards-1B4F8A?style=flat-square)](https://openastra.org)
 
@@ -20,7 +20,7 @@ A Docker container that enforces OpenGPL policies as an HTTP sidecar — drop it
 
 ## What is the OpenGPL Sidecar?
 
-The OpenGPL Sidecar is a self-hosted HTTP enforcement proxy built on [FastAPI](https://fastapi.tiangolo.com/) and the [opengpl-sdk](../sdk/). It sits between your application and your LLM, enforcing `.gpl` policies without requiring any changes to your existing codebase.
+The OpenGPL Sidecar is a self-hosted HTTP decision service built on [FastAPI](https://fastapi.tiangolo.com/) and the [opengpl-sdk](../sdk/). Your application calls it before and after each LLM call, so services in any language can enforce `.gpl` policies without embedding the Python SDK. It is not a transparent proxy: your code makes the two check calls.
 
 **Architecture:**
 
@@ -49,7 +49,7 @@ User Request
 docker run \
   -v ./my-policy.gpl:/policies/my-policy.gpl:ro \
   -p 8080:8080 \
-  opengpl/sidecar:latest
+  ghcr.io/sadayamuthu/opengpl/sidecar:latest
 ```
 
 ### Check a prompt
@@ -87,7 +87,7 @@ For production use, mount your policy directory and configure the environment:
 version: "3.9"
 services:
   opengpl-sidecar:
-    image: opengpl/sidecar:latest
+    image: ghcr.io/sadayamuthu/opengpl/sidecar:latest
     ports:
       - "8080:8080"
     volumes:
@@ -206,7 +206,7 @@ The sidecar supports multiple policy files simultaneously — each request speci
 docker run \
   -v ./policies:/policies:ro \
   -p 8080:8080 \
-  opengpl/sidecar:latest
+  ghcr.io/sadayamuthu/opengpl/sidecar:latest
 ```
 
 ```bash
@@ -277,7 +277,7 @@ containers:
     image: your-app:latest
 
   - name: opengpl-sidecar
-    image: opengpl/sidecar:latest
+    image: ghcr.io/sadayamuthu/opengpl/sidecar:latest
     ports:
       - containerPort: 8080
     env:

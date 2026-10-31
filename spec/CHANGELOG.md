@@ -7,7 +7,17 @@ OpenGPL uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [0.1.0] — 2025-03-01
+## [0.1.1] — 2026-10-31
+
+### Changed (editorial, no schema changes)
+- `enforcement.engine` default and examples now name the reference implementation `opengpl-sdk` (was `OpenLSP`)
+- Identity and compliance-tool integrations described generically (any OIDC provider, any OSCAL-aware tool) rather than by product
+- Integration guide rewritten against the real `opengpl-sdk` API; planned features marked as planned
+- Enforcement-model performance figures labelled as design targets
+- Removed a non-normative note about OPA's maintainers
+- Corrected publication dates to 2026
+
+## [0.1.0] — 2026-03-08
 
 ### Initial Public Draft
 
@@ -25,19 +35,19 @@ This is the first public draft of the OpenGPL specification, released for commun
 - Trust level model (UNTRUSTED → LOW → MEDIUM → HIGH → SYSTEM)
 - Violation action model (ALLOW → LOG → REDACT → ALERT → BLOCK → ESCALATE → DENY)
 - Full compliance mappings: NIST AI RMF, FedRAMP Moderate, HIPAA, EU AI Act
-- Integration reference: OpenLSP SDK, LangChain, API gateway, OpenID.ai, ControlGate
+- Integration reference: `opengpl-sdk` reference implementation, framework patterns, HTTP sidecar, identity and OSCAL tooling
 - Appendices: threat categories, data classifications, compliance identifiers
 
 ---
 
 ## Upcoming
 
-### [0.2.0] — Q3 2025 (Planned)
-- Training-time policy hooks
-- Multi-tenant policy stores
+### [0.2.0] — In design
+- Principals, entitlements and delegation chains (`human → agent → agent → tool → resource`)
+- Governance blocks: inventory, usage vs. grant, access reviews with OSCAL evidence
+- Gateway integration via Envoy `ext_authz` and OpenID AuthZEN, starting with agentgateway
 - Policy testing framework (`opengpl test`)
 - ISO 42001 and DPDPA compliance mappings
-- Extended `model_routing` schema
 
 ### [0.3.0] — Q1 2026 (Planned)
 - Multi-modal content policy (image, audio)

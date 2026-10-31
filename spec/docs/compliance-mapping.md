@@ -95,8 +95,8 @@ Required controls for most federal civilian agency systems handling Controlled U
 | Config Management | CM-2 | Policy `version` field + Git history |
 | Config Management | CM-6 | Policy as code in version control |
 | Config Management | CM-9 | `status: ACTIVE/DRAFT/DEPRECATED` |
-| Identification & Auth | IA-2 | `require_user_auth: true` + OpenID.ai |
-| Identification & Auth | IA-3 | Agent identity via OpenID.ai |
+| Identification & Auth | IA-2 | `require_user_auth: true` + identity provider |
+| Identification & Auth | IA-3 | Agent identity via identity provider |
 | System Integrity | SI-3 | `input_controls.detect: [prompt_injection, jailbreak]` |
 | System Integrity | SI-10 | `input_controls.sanitize` |
 | System & Comm. Protection | SC-7 | `allow_external_calls: false` |
@@ -149,9 +149,9 @@ HIPAA Technical Safeguards (45 CFR Part 164, Subpart C) apply to systems handlin
 
 | Safeguard | 45 CFR Reference | Required Standard | OpenGPL Control |
 |---|---|---|---|
-| Access Control | 164.312(a)(1) | Unique user ID | `require_user_auth: true` + OpenID.ai |
+| Access Control | 164.312(a)(1) | Unique user ID | `require_user_auth: true` + identity provider |
 | Access Control | 164.312(a)(1) | Automatic logoff | `applies_to.effective_until` (session scope) |
-| Access Control | 164.312(a)(1) | Encryption/decryption | Handled by OpenLSP transport layer |
+| Access Control | 164.312(a)(1) | Encryption/decryption | Handled by the runtime's transport layer (TLS) |
 | Audit Controls | 164.312(b) | Activity logging | `log_level: FULL`, `format: OSCAL` |
 | Integrity | 164.312(c)(1) | PHI alteration protection | `output_controls.block: [PHI]` |
 | Integrity | 164.312(c)(2) | Transmission integrity | `allow_external_calls: false` |
@@ -229,7 +229,7 @@ SOC 2 Trust Service Criteria (TSC) relevant to AI systems:
 | TSC | Criteria | OpenGPL Control |
 |---|---|---|
 | CC6.1 | Logical access security | `trust_level`, `require_user_auth` |
-| CC6.2 | Authentication | `require_user_auth: true` + OpenID.ai |
+| CC6.2 | Authentication | `require_user_auth: true` + identity provider |
 | CC6.3 | Access removal | `applies_to.effective_until` |
 | CC6.7 — Common Criteria | Transmission protection | `allow_external_calls: false` |
 | CC7.1 | System monitoring | `audit.log_level`, `alert_on_violation` |
@@ -282,7 +282,7 @@ output_controls:
 
 ## 8. OSCAL Evidence Generation
 
-When `audit.format: OSCAL` and `audit.evidence_export: true` are set, OpenLSP automatically generates OSCAL-compatible artifacts that can be consumed by ControlGate / OpenCIQ for compliance assembly.
+When `audit.format: OSCAL` and `audit.evidence_export: true` are set, a runtime generates OSCAL-compatible artifacts that OSCAL-aware compliance tools (for example, ControlGate) can assemble. The reference SDK currently emits only a minimal stub (`opengpl audit`).
 
 ### Generated Artifacts
 
@@ -295,7 +295,7 @@ When `audit.format: OSCAL` and `audit.evidence_export: true` are set, OpenLSP au
 
 ### OSCAL Component Definition Example
 
-OpenLSP auto-generates the following OSCAL component for each active policy:
+A full runtime generates an OSCAL component like the following for each active policy:
 
 ```json
 {
@@ -311,7 +311,7 @@ OpenLSP auto-generates the following OSCAL component for each active policy:
       "implemented-requirements": [
         {
           "control-id": "ac-2",
-          "description": "OpenGPL trust_level: LOW with require_user_auth enforced via OpenID.ai"
+          "description": "OpenGPL trust_level: LOW with require_user_auth enforced via the identity provider"
         },
         {
           "control-id": "au-2",

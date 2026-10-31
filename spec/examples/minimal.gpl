@@ -16,5 +16,5 @@ audit:
   compliance: [SOC2]
 
 enforcement:
-  engine: OpenLSP
+  engine: opengpl-sdk
   on_violation: LOG

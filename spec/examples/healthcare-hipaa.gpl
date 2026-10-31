@@ -40,7 +40,7 @@ input_controls:
     - credentials
   max_context_tokens: 8000
   max_prompt_tokens: 2000
-  require_user_auth: true   # Patient must be authenticated via OpenID.ai
+  require_user_auth: true   # Patient must be authenticated by your identity provider
   language_filter: [en, es] # English and Spanish
 
 model_controls:
@@ -100,18 +100,18 @@ audit:
     - SOC2
     - NIST-AI-RMF
   pii_in_logs: false
-  evidence_export: true           # Auto-assemble OSCAL SSP via ControlGate
+  evidence_export: true           # Export OSCAL evidence for compliance tooling
   alert_on_violation: true
   alert_channels: [pagerduty, siem]
 
 enforcement:
-  engine: OpenLSP
+  engine: opengpl-sdk
   on_violation: BLOCK
   on_detection: ALERT
-  fallback: DENY               # Fail closed if OpenLSP is unavailable
+  fallback: DENY               # Fail closed if the enforcement runtime is unavailable
 
 metadata:
   tags: [healthcare, hipaa, patient-facing, phi]
   review_cycle: quarterly
-  last_reviewed: '2025-01-15'
+  last_reviewed: '2026-03-01'
   approved_by: CISO

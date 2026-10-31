@@ -16,10 +16,10 @@ def main():
 def validate(policy_file: str):
     """Validate a .gpl policy file against the OpenGPL schema."""
     try:
-        policy = loader.load(policy_file)
-        name = policy.get("policy", policy_file)
-        version = policy.get("opengpl", "?")
-        click.echo(click.style(f"✓ Policy '{name}' is valid (OpenGPL v{version})", fg="green"))
+        for policy in loader.load_all(policy_file):
+            name = policy.get("policy", policy_file)
+            version = policy.get("opengpl", "?")
+            click.echo(click.style(f"✓ Policy '{name}' is valid (OpenGPL v{version})", fg="green"))
     except FileNotFoundError:
         click.echo(click.style(f"✗ File not found: {policy_file}", fg="red"))
         sys.exit(1)

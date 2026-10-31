@@ -38,3 +38,27 @@ def test_load_invalid_schema(tmp_path):
     f.write_text("opengpl: '0.1'\npolicy: bad")  # missing required fields
     with pytest.raises(ValueError, match="schema"):
         load(str(f))
+
+
+_TWO = MINIMAL_POLICY.replace("policy: test-policy", "policy: alpha") + "---\n" + MINIMAL_POLICY.replace("policy: test-policy", "policy: beta")
+
+
+def test_load_all_multi_document(tmp_path):
+    from opengpl.loader import load_all
+    f = tmp_path / "multi.gpl"
+    f.write_text(_TWO)
+    assert [d["policy"] for d in load_all(str(f))] == ["alpha", "beta"]
+
+
+def test_load_rejects_multi_document_with_clear_error(tmp_path):
+    f = tmp_path / "multi.gpl"
+    f.write_text(_TWO)
+    with pytest.raises(ValueError, match="contains 2 policies"):
+        load(str(f))
+
+
+def test_load_invalid_yaml_is_value_error(tmp_path):
+    f = tmp_path / "bad.gpl"
+    f.write_text("opengpl: '0.1'\n  bad: [indent")
+    with pytest.raises(ValueError, match="Invalid YAML"):
+        load(str(f))
