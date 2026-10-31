@@ -68,8 +68,19 @@ class DecisionLog:
         gate: Literal["input", "output", "model"],
         result: EvaluationResult,
         text: str | None,
-    ) -> dict:
+    ) -> dict | None:
+        """Record one gate decision; return the record, or None if not recorded.
+
+        Nothing is recorded when the policy sets ``audit.log_level: OFF``.
+        Under FULL or DEBUG the record holds the text (redacted unless
+        ``audit.pii_in_logs`` is true), but only when the record is kept (a
+        file is open or ``max_records`` is not 0). If redaction raises, the
+        text is omitted and ``text_redaction`` is set to ``"failed"``; raw text
+        is never written as a fallback.
+        """
         audit = policy.get("audit") or {}
+        if audit.get("log_level") == "OFF":
+            return None
         rec = {
             "schema": DECISION_SCHEMA,
             "id": str(uuid.uuid4()),
@@ -84,8 +95,15 @@ class DecisionLog:
             "fired": list(result.fired),
             "text_sha256": None if text is None else hashlib.sha256(text.encode("utf-8")).hexdigest(),
         }
-        if text is not None and audit.get("log_level") in ("FULL", "DEBUG"):
-            rec["text"] = text if audit.get("pii_in_logs") is True else redact_for_log(text)
+        kept = self._fh is not None or self.max_records != 0
+        if kept and text is not None and audit.get("log_level") in ("FULL", "DEBUG"):
+            if audit.get("pii_in_logs") is True:
+                rec["text"] = text
+            else:
+                try:
+                    rec["text"] = redact_for_log(text)
+                except Exception:
+                    rec["text_redaction"] = "failed"
         with self._lock:
             self.records.append(rec)
             if self.max_records is not None and len(self.records) > self.max_records:

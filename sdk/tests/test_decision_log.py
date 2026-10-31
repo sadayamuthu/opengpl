@@ -115,3 +115,46 @@ def test_redact_is_linear_time(text):
     t = time.perf_counter()
     redact_for_log(text)
     assert time.perf_counter() - t < 1
+
+
+def test_redaction_failure_keeps_record_without_text(tmp_path, monkeypatch):
+    import opengpl.audit.ledger as ledger
+
+    def boom(text):
+        raise ValueError("[E088] Text of length 1000001 exceeds maximum")
+
+    monkeypatch.setattr(ledger, "sanitize_pii", boom)
+    f = tmp_path / "d.jsonl"
+    rec = DecisionLog(f).record(policy=P(log_level="FULL"), gate="input", result=R, text="SSN 123-45-6789")
+    assert "text" not in rec and rec["text_redaction"] == "failed"
+    on_disk = read_decisions(f)
+    assert len(on_disk) == 1 and "text" not in on_disk[0]
+    assert on_disk[0]["text_redaction"] == "failed"
+    assert "123-45-6789" not in f.read_text()
+
+
+def test_unread_log_does_not_redact(monkeypatch):
+    import opengpl.audit.ledger as ledger
+
+    def must_not_run(text):
+        raise AssertionError("sanitize_pii called for a log nobody keeps")
+
+    monkeypatch.setattr(ledger, "sanitize_pii", must_not_run)
+    log = DecisionLog(None, max_records=0)
+    rec = log.record(policy=P(log_level="FULL"), gate="input", result=R, text="SSN 123-45-6789")
+    assert log.records == [] and "text" not in rec
+
+
+def test_file_only_log_still_redacts(tmp_path):
+    f = tmp_path / "d.jsonl"
+    log = DecisionLog(f, max_records=0)
+    log.record(policy=P(log_level="FULL"), gate="input", result=R, text="SSN 123-45-6789")
+    assert log.records == []
+    assert read_decisions(f)[0]["text"] == "SSN [REDACTED-US_SSN]"
+
+
+def test_log_level_off_records_nothing(tmp_path):
+    f = tmp_path / "d.jsonl"
+    log = DecisionLog(f)
+    assert log.record(policy=P(log_level="OFF"), gate="input", result=R, text="hi") is None
+    assert log.records == [] and read_decisions(f) == []

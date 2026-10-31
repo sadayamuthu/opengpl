@@ -287,7 +287,7 @@ Controls are checked against the SP 800-53 Rev 5 Low, Moderate and High baseline
 
 ### Decision log
 
-The assessment results come from the JSONL decision log (`PolicyEngine(path, decision_log=...)`, or `OPENGPL_DECISION_LOG` for the sidecar). A record stores the rule IDs evaluated and fired, not controls; controls are derived at audit time, so one log can be audited against different frameworks. Under `audit.log_level` FULL or DEBUG, the record holds the text, redacted unless `audit.pii_in_logs` is `true`. Otherwise only a SHA-256 of the text is stored.
+The assessment results come from the JSONL decision log (`PolicyEngine(path, decision_log=...)`, or `OPENGPL_DECISION_LOG` for the sidecar). A record stores the rule IDs evaluated and fired, not controls; controls are derived at audit time, so one log can be audited against different frameworks. Under `audit.log_level` FULL or DEBUG, the record holds the text, redacted unless `audit.pii_in_logs` is `true`; if redaction fails, the text is omitted and the record carries `"text_redaction": "failed"`. Otherwise only a SHA-256 of the text is stored. Under `audit.log_level` OFF, no record is written.
 
 ### Component Definition Example
 
@@ -303,7 +303,7 @@ An excerpt of the output for `spec/examples/fedramp-moderate.gpl` with `--framew
         "source": "https://raw.githubusercontent.com/usnistgov/oscal-content/v1.6.0/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_MODERATE-baseline_profile.json",
         "implemented-requirements": [{
           "control-id": "au-2",
-          "description": "audit.log_level is FULL; the runtime writes a decision record for every gate evaluation.",
+          "description": "audit.log_level is FULL; the runtime writes a decision record for every gate evaluation to the configured decision log.",
           "props": [
             { "name": "implementation-status", "ns": "https://opengpl.org/ns/oscal", "value": "enforced" },
             { "name": "policy-field", "ns": "https://opengpl.org/ns/oscal", "value": "audit.log_level=FULL" }

@@ -13,9 +13,10 @@ _VERSION = _version_file.read_text().strip() if _version_file.exists() else "0.0
 app = FastAPI(title="OpenGPL Sidecar", version=_VERSION)
 
 # One shared decision log for every engine; nothing is written unless
-# OPENGPL_DECISION_LOG is set.
-_DECISION_LOG_PATH = os.environ.get("OPENGPL_DECISION_LOG")
-_decision_log = DecisionLog(_DECISION_LOG_PATH) if _DECISION_LOG_PATH else None
+# OPENGPL_DECISION_LOG is set. The file is the record, so no in-memory window
+# is kept (max_records=0), and without a file no text is redacted or retained.
+_DECISION_LOG_PATH = os.environ.get("OPENGPL_DECISION_LOG") or None
+_decision_log = DecisionLog(_DECISION_LOG_PATH, max_records=0)
 
 _engines: dict[str, PolicyEngine] = {}
 

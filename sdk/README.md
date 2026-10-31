@@ -211,9 +211,17 @@ It stores rule IDs, not controls: controls are derived when you run
 When `audit.log_level` is `FULL` or `DEBUG`, the record also holds the text.
 That text is redacted (PII via `sanitize_pii`, plus SSN, card-number and
 credential patterns) unless the policy sets `audit.pii_in_logs: true`. At other
-levels only the hash is stored. Without a path, records are kept in memory
-only (the most recent 10,000). The [sidecar](../sidecar/) reads the file path
-from the `OPENGPL_DECISION_LOG` environment variable.
+levels only the hash is stored. If redaction itself fails (for example,
+Presidio rejects text over 1,000,000 characters), the record is still written
+without the text and with `"text_redaction": "failed"`; raw text is never
+written as a fallback. When `audit.log_level` is `OFF`, nothing is recorded and
+`record()` returns `None`.
+
+Without a path, records are kept in memory only (the most recent 10,000; set
+with `DecisionLog(max_records=...)`). With no path and `max_records=0`, nothing
+is kept, so no text is redacted. The [sidecar](../sidecar/) reads the file path
+from the `OPENGPL_DECISION_LOG` environment variable and keeps no records in
+memory.
 
 #### OSCAL output
 

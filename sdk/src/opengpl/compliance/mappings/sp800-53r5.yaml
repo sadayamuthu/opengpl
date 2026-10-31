@@ -21,7 +21,7 @@ entries:
   - control: au-2
     field: audit.log_level
     when: {in: [STANDARD, FULL, DEBUG]}
-    statement: "audit.log_level is {value}; the runtime writes a decision record for every gate evaluation."
+    statement: "audit.log_level is {value}; the runtime writes a decision record for every gate evaluation to the configured decision log."
     rationale: "AU-2 event logging (item a/c): gate decisions are the event type the system is capable of logging and logs."
   - control: au-3
     field: audit.log_level
@@ -36,7 +36,7 @@ entries:
   - control: au-12
     field: audit.log_level
     when: {in: [STANDARD, FULL, DEBUG]}
-    statement: "audit.log_level is {value}; the runtime generates audit records at each gate evaluation."
+    statement: "audit.log_level is {value}; the runtime generates a decision record at each gate evaluation and writes it to the configured decision log."
     rationale: "AU-12 audit record generation (item c): generates records for the logged event types with the AU-3 content."
   - control: ia-2
     field: input_controls.require_user_auth
