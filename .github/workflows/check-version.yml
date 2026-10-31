@@ -18,8 +18,8 @@ jobs:
       sdk: ${{ steps.filter.outputs.sdk }}
       sidecar: ${{ steps.filter.outputs.sidecar }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -39,7 +39,7 @@ jobs:
     if: needs.detect-changes.outputs.spec == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Get PR version
         id: pr_version
         run: |
@@ -83,7 +83,7 @@ jobs:
     if: needs.detect-changes.outputs.sdk == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Get PR version
         id: pr_version
         run: |
@@ -129,7 +129,7 @@ jobs:
     if: needs.detect-changes.outputs.sidecar == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Get PR version
         id: pr_version
         run: |
