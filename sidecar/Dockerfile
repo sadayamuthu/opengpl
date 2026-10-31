@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Install SDK from local source (monorepo build context is repo root)
 COPY sdk/ /build/sdk/
-RUN pip install --no-cache-dir /build/sdk/ && \
+RUN pip install --no-cache-dir "/build/sdk/[pii]" && \
     for i in 1 2 3; do python -m spacy download en_core_web_lg && break || sleep 5; done
 
 # Copy sidecar app and version

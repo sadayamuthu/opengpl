@@ -155,7 +155,7 @@ input_controls:
     type: boolean
     required: false
     default: false
-    description: Whether a verified user identity (via OpenID.ai) is required.
+    description: Whether a verified user identity (from the deployment's identity provider) is required.
 
   language_filter:
     type: string[] (ISO 639-1)
@@ -393,7 +393,7 @@ audit:
     default: false
     description: >
       Auto-export OSCAL evidence artifacts on policy evaluation.
-      Consumed by ControlGate / OpenCIQ for compliance assembly.
+      Consumable by any OSCAL-aware compliance tool (for example, ControlGate).
 
   alert_on_violation:
     type: boolean
@@ -415,8 +415,8 @@ enforcement:
   engine:
     type: string
     required: true
-    default: OpenLSP
-    description: Enforcement engine identifier. OpenLSP is the reference implementation.
+    default: opengpl-sdk
+    description: Enforcement engine identifier. opengpl-sdk is the reference implementation; any conforming runtime may be named.
 
   on_violation:
     type: enum

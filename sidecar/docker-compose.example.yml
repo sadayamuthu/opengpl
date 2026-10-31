@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   opengpl-sidecar:
-    image: opengpl/sidecar:latest
+    image: ghcr.io/sadayamuthu/opengpl/sidecar:latest
     ports:
       - "8080:8080"
     volumes:

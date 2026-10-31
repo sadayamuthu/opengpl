@@ -24,3 +24,10 @@ def test_pii_sanitize():
     text = "Call me at 555-867-5309"
     sanitized = sanitize_pii(text)
     assert "555-867-5309" not in sanitized
+
+def test_pii_regex_fallback(monkeypatch):
+    import opengpl.detectors.pii as pii
+    monkeypatch.setattr(pii, "_ANALYZER", False)  # force the dependency-free backend
+    assert pii.backend() == "regex"
+    out = pii.sanitize_pii("SSN 123-45-6789, card 4111 1111 1111 1111, mail a@b.com")
+    assert "123-45-6789" not in out and "4111" not in out and "a@b.com" not in out

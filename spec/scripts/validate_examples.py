@@ -7,7 +7,7 @@ import yaml
 import jsonschema
 
 REPO_ROOT = pathlib.Path(__file__).parent.parent
-SCHEMA_PATH = REPO_ROOT / "schema" / "opengpl-v0.1.json"
+SCHEMA_PATH = REPO_ROOT / "schemas" / "opengpl-v0.1.json"
 EXAMPLES_DIR = REPO_ROOT / "examples"
 
 

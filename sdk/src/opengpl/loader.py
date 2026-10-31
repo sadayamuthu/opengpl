@@ -16,14 +16,39 @@ def _get_schema(version: str) -> dict:
     return json.loads(urllib.request.urlopen(url).read())
 
 
-def load(path: str) -> dict:
-    """Load and validate a .gpl policy file. Returns parsed dict."""
+def load_all(path: str) -> list[dict]:
+    """Load and validate every policy in a .gpl file.
+
+    A file may hold several policies separated by ``---`` (see
+    ``examples/multi-agent.gpl``).
+    """
     p = pathlib.Path(path)
     if not p.exists():
         raise FileNotFoundError(f"Policy file not found: {path}")
-    policy = yaml.safe_load(p.read_text())
-    validate_schema(policy)
-    return policy
+    try:
+        docs = [d for d in yaml.safe_load_all(p.read_text()) if d is not None]
+    except yaml.YAMLError as e:
+        raise ValueError(f"Invalid YAML in {path}: {e}") from e
+    if not docs:
+        raise ValueError(f"No policy found in {path}")
+    for doc in docs:
+        if not isinstance(doc, dict):
+            raise ValueError(f"Policy in {path} must be a YAML mapping")
+        validate_schema(doc)
+    return docs
+
+
+def load(path: str) -> dict:
+    """Load and validate a single-policy .gpl file. Returns parsed dict."""
+    docs = load_all(path)
+    if len(docs) > 1:
+        names = ", ".join(str(d.get("policy", "?")) for d in docs)
+        raise ValueError(
+            f"{path} contains {len(docs)} policies ({names}); "
+            "PolicyEngine takes one policy per file. Split the file, "
+            "or use opengpl.loader.load_all()."
+        )
+    return docs[0]
 
 
 def validate_schema(policy: dict) -> None:

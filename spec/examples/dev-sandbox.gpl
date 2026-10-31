@@ -55,7 +55,7 @@ audit:
   alert_on_violation: false   # No alerts in dev — avoid noise
 
 enforcement:
-  engine: OpenLSP
+  engine: opengpl-sdk
   on_violation: LOG           # Log only — never block in dev
   on_detection: LOG
   fallback: ALLOW             # Allow even if engine unavailable in dev

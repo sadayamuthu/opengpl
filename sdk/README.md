@@ -33,7 +33,20 @@ Use it directly in your Python application, or run it as a [sidecar HTTP proxy](
 pip install opengpl-sdk
 ```
 
-Requires Python 3.11+.
+Requires Python 3.11+. The core install is small: it uses regex-based
+detectors and has no NLP dependencies.
+
+For NLP-based PII detection (Microsoft Presidio + spaCy), install the extra
+and download the language model:
+
+```bash
+pip install "opengpl-sdk[pii]"
+python -m spacy download en_core_web_lg
+```
+
+> **Status:** this is a reference implementation of a draft spec. Detectors
+> are heuristics, and several policy blocks are validated but not yet
+> enforced. See [Implementation status](../README.md#implementation-status).
 
 ---
 
@@ -139,13 +152,13 @@ result.reasons  # ["prompt_injection detected"]
 
 Enforces `input_controls` from the policy. Runs before the LLM call.
 
-**Detectors:**
+**Detectors** (regex heuristics that catch common phrasings, not a complete defence):
 
 | Detector | Policy key | What it catches |
 |---|---|---|
 | Prompt injection | `prompt_injection` | Instructions embedded to override system prompts |
 | Jailbreak | `jailbreak` | "DAN", roleplay escapes, and other bypass attempts |
-| PII sanitization | `pii` | Detects PII in inputs (names, emails, phone numbers) |
+| PII sanitization | `pii` | Not yet applied by the input gate. Use `opengpl.detectors.pii.sanitize_pii` directly |
 
 ```yaml
 input_controls:
@@ -178,7 +191,7 @@ output_controls:
 
 ### Audit
 
-The SDK logs evaluation results to an in-memory ledger and can export OSCAL compliance artifacts.
+The SDK logs evaluation results to an in-memory ledger and can write a minimal OSCAL stub (not a full assessment artifact).
 
 ```python
 from opengpl.audit.oscal import generate_oscal_stub
@@ -282,16 +295,11 @@ chain = (
 )
 ```
 
-### With model context (multi-model policies)
+### Model controls
 
-```python
-engine = PolicyEngine("policy.gpl")
-
-# Check if model is permitted by the policy
-model_result = engine.check_model(context={"model": "gpt-4o"})
-if not model_result.passed:
-    raise PermissionError("Model not allowed by policy")
-```
+`engine.check_model()` exists, but `model_controls` are not enforced yet: the
+model gate always returns `ALLOW`. Enforcement of tool access, trust levels
+and human-in-loop is planned for SDK 0.2.
 
 ---
 
@@ -312,7 +320,7 @@ sdk/src/opengpl/
 ├── detectors/
 │   ├── injection.py     # Prompt injection detector
 │   ├── jailbreak.py     # Jailbreak attempt detector
-│   └── pii.py           # PII detector (spaCy-based)
+│   └── pii.py           # PII detector (regex; Presidio with [pii])
 └── audit/
     ├── ledger.py        # In-memory audit ledger
     └── oscal.py         # OSCAL compliance artifact generator
@@ -320,17 +328,24 @@ sdk/src/opengpl/
 
 ---
 
-## Compliance Frameworks Supported
+## Compliance Framework Mapping
 
-| Framework | Coverage |
+The spec maps policy fields to controls in each framework. A mapping shows
+which controls a policy can express evidence for. It is not a certification,
+and the reference SDK does not yet produce assessor-ready evidence (see
+[Implementation status](../README.md#implementation-status)).
+
+| Framework | Mapping in the spec |
 |---|---|
-| NIST AI Risk Management Framework | Full control mapping |
-| FedRAMP Low / Moderate / High | Full control mapping + OSCAL output |
-| HIPAA Technical Safeguards | Full coverage |
+| NIST AI Risk Management Framework | GOVERN, MAP, MEASURE, MANAGE functions |
+| FedRAMP Low / Moderate / High (NIST SP 800-53) | AC, AU, CM, IA, SC, SI control families |
+| HIPAA Technical Safeguards | §164.312 safeguards |
 | EU AI Act (High-Risk) | Articles 10, 11, 13, 14, 15 |
-| SOC 2 (Trust Service Criteria) | Full coverage |
-| ISO/IEC 42001 | Partial |
-| India DPDPA | Partial |
+| SOC 2 (Trust Service Criteria) | Common Criteria (CC6, CC7) |
+| ISO/IEC 42001 | Partial (planned for v0.2) |
+| India DPDPA | Partial (planned for v0.2) |
+
+Details: [compliance-mapping.md](../spec/docs/compliance-mapping.md).
 
 ---
 
@@ -339,7 +354,7 @@ sdk/src/opengpl/
 OpenGPL is an open standard maintained by **OpenAstra** at [openastra.org](https://openastra.org).
 
 - Read the [full specification](../spec/SPEC.md)
-- Join [GitHub Discussions](https://github.com/sadayamuthu/opengpl/discussions)
+- Ask questions in [GitHub Discussions](https://github.com/sadayamuthu/opengpl/discussions)
 - File issues for bugs or spec clarifications
 - Submit pull requests for fixes and improvements
 

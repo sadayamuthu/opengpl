@@ -9,7 +9,7 @@ Governance Policy Language — Full Technical Specification
 | **Title** | OpenGPL — Governance Policy Language Specification |
 | **Version** | 0.1 |
 | **Status** | PUBLIC DRAFT — Community Review Open |
-| **Published** | March 2025 |
+| **Published** | March 2026 |
 | **Governed by** | OpenAstra |
 | **Spec License** | Creative Commons CC BY 4.0 |
 | **Code License** | Apache License 2.0 |
@@ -63,8 +63,6 @@ In deterministic systems, a policy evaluation is binary — a request either mat
 | HashiCorp Sentinel | IaC / Terraform | None | None |
 | NeMo Guardrails | LLM runtime rails | Partial | None |
 | **OpenGPL v0.1** | **Generative AI and dynamic systems** | **Native** | **OSCAL / FedRAMP** |
-
-> **Note:** In August 2025, Apple hired the maintainers of OPA with plans to sunset enterprise OPA offerings — further validating the need for a purpose-built AI policy language with neutral governance.
 
 ### 2.3 Scope
 
@@ -395,7 +393,7 @@ enforcement:
 metadata:
   tags: [healthcare, hipaa, patient-facing]
   review_cycle: quarterly
-  last_reviewed: '2025-01-15'
+  last_reviewed: '2026-03-01'
   approved_by: CISO
 ```
 
@@ -556,7 +554,7 @@ When multiple policies apply to the same agent or context:
 | AC — Access Control | `model_controls.trust_level`, `require_user_auth` | AC-2, AC-3, AC-6 |
 | AU — Audit & Accountability | `audit` block (all fields) | AU-2, AU-3, AU-9, AU-12 |
 | CM — Configuration Management | Policy `version`, `status`, `extends` | CM-2, CM-6, CM-9 |
-| IA — Identification & Auth | OpenID.ai integration, `require_user_auth` | IA-2, IA-3, IA-5 |
+| IA — Identification & Auth | Identity-provider integration, `require_user_auth` | IA-2, IA-3, IA-5 |
 | SI — System Integrity | `input_controls.detect`, `output_controls.block` | SI-3, SI-10 |
 | SC — System & Comm. Protection | `model_controls.allow_external_calls` | SC-7, SC-8 |
 
@@ -612,58 +610,48 @@ return response if output_result.passed else "Response blocked by policy."
 
 ---
 
-### 9.2 LangChain Integration
+### 9.2 Agent Framework Integration (non-normative)
 
-```python
-from langchain.callbacks import OpenGPLCallback
-from opengpl import PolicyEngine
-
-policy = PolicyEngine("policy.gpl")
-callback = OpenGPLCallback(policy=policy)
-
-llm = ChatOpenAI(callbacks=[callback])
-# Policy is automatically enforced on all LLM calls
-```
+Runtimes are framework-agnostic: the application calls the input gate before the model and the output gate after it. The reference SDK does not yet ship framework-specific adapters (for example, a LangChain callback); see the [Integration Guide](./docs/integration-guide.md) for patterns that work today.
 
 ---
 
-### 9.3 Validation API (`opengpl-sdk`)
+### 9.3 Policy Validation
+
+Any JSON Schema validator can validate a policy against the published schema at `https://opengpl.org/schema/v0.1/schema.json`. The reference SDK provides a CLI:
 
 ```bash
-# Validate a policy via the reference validation API
-curl -X POST https://api.opengpl.org/validate \
-  -H "Content-Type: application/json" \
-  -d '{"policy": "...yaml contents...", "version": "0.1"}'
+pip install opengpl-sdk
+opengpl validate policy.gpl
 ```
 
 ---
 
-### 9.4 OpenID.ai Identity Integration
+### 9.4 Identity Integration
 
-When `require_user_auth: true` is set, an OpenGPL-compatible runtime can validate the requesting agent's identity token via services such as OpenID.ai before policy evaluation proceeds.
+When `require_user_auth: true` is set, an OpenGPL-compatible runtime SHOULD require a verified identity for the requesting user or agent before policy evaluation proceeds. OpenGPL does not issue or verify identities itself; verification is delegated to the deployment's identity provider or gateway (for example, any OIDC/OAuth 2.0 provider).
 
 ```yaml
-# Policy with OpenID.ai enforcement
 model_controls:
   trust_level: LOW
   require_user_auth: true
-  # Trust level is automatically elevated based on
-  # OpenID.ai identity verification result
+  # The runtime may elevate the effective trust level
+  # based on the identity provider's verification result
 ```
 
 ---
 
-### 9.5 ControlGate (OpenCIQ) Integration
+### 9.5 Compliance Tooling Integration
 
-ControlGate natively imports OpenGPL policies and uses them as the source of truth for automated compliance evidence assembly. When `evidence_export: true` and `format: OSCAL` are set, ControlGate automatically assembles OSCAL System Security Plan artifacts from runtime enforcement logs.
+When `evidence_export: true` and `format: OSCAL` are set, a runtime exports OSCAL evidence that OSCAL-aware compliance tools can assemble into System Security Plan artifacts. OpenAstra's ControlGate is one such tool; any OSCAL-compatible tool can consume the output.
 
 ```yaml
 audit:
   format: OSCAL
   evidence_export: true
   compliance: [FedRAMP-Moderate]
-  # ControlGate / OpenCIQ picks up OSCAL artifacts
-  # and assembles SSP documentation automatically
+  # An OSCAL-aware compliance tool consumes the exported
+  # artifacts and assembles SSP documentation
 ```
 
 ---
@@ -761,7 +749,7 @@ Valid values for the `audit.compliance` array:
 
 ## Copyright & License
 
-**Specification text:** Copyright © 2025 OpenAstra. Licensed under [Creative Commons CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).  
+**Specification text:** Copyright © 2026 OpenAstra. Licensed under [Creative Commons CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).  
 You are free to share and adapt this specification with attribution.
 
 **Reference implementations, schemas, examples:** Licensed under [Apache License 2.0](https://opensource.org/licenses/Apache-2.0).

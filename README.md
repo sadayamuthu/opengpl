@@ -17,6 +17,10 @@ The open policy language for generative AI systems and dynamic systems
 
 ---
 
+<sub>Not related to the GNU General Public License. "GPL" here stands for <b>Governance Policy Language</b>. OpenGPL itself is licensed CC BY 4.0 (spec) and Apache 2.0 (code).</sub>
+
+---
+
 [Specification](./spec/SPEC.md) · [Schema](./spec/schemas/) · [Examples](./spec/examples/) · [Changelog](./spec/CHANGELOG.md) · [Contributing](./spec/CONTRIBUTING.md) · [openastra.org](https://openastra.org) · [opengpl.org](https://opengpl.org)
 
 </div>
@@ -76,9 +80,9 @@ Existing policy languages — OPA/Rego, AWS Cedar, HashiCorp Sentinel — were b
 ## Core Features
 
 - **🔒 Four-plane policy control** — Input, Model, Output, and Audit planes in a single document
-- **🤖 LLM-native** — Trust levels, hallucination thresholds, and tool access as first-class primitives
-- **📋 Compliance-first** — Native mapping to FedRAMP, NIST AI RMF, HIPAA, and EU AI Act
-- **📄 OSCAL output** — Policies auto-generate compliance evidence artifacts
+- **🤖 LLM-native** — Trust levels, hallucination thresholds, and tool access as first-class primitives in the language
+- **📋 Compliance-first** — Policy fields map to FedRAMP, NIST AI RMF, HIPAA, and EU AI Act controls
+- **📄 OSCAL output** — Policies are designed to emit OSCAL compliance evidence (the reference SDK emits a minimal stub today)
 - **🧩 Composable** — Inherit and extend base policies; wildcard agent matching
 - **🔓 Open standard** — Governed by OpenAstra, licensed CC BY 4.0; no vendor lock-in
 - **⚙️ Framework-agnostic** — Works with any LLM provider or agent framework
@@ -91,6 +95,8 @@ Existing policy languages — OPA/Rego, AWS Cedar, HashiCorp Sentinel — were b
 
 ```bash
 pip install opengpl-sdk
+# Optional: NLP-based PII detection (larger install)
+# pip install "opengpl-sdk[pii]" && python -m spacy download en_core_web_lg
 ```
 
 ### 2. Write a policy
@@ -140,7 +146,7 @@ return llm_response if output.passed else "Response blocked by policy."
 docker run \
   -v ./my-policy.gpl:/policies/my-policy.gpl:ro \
   -p 8080:8080 \
-  opengpl/sidecar:latest
+  ghcr.io/sadayamuthu/opengpl/sidecar:latest
 ```
 
 ```bash
@@ -176,25 +182,54 @@ opengpl/
 │       └── integration-guide.md   # LangChain, AutoGen, direct API
 ├── sdk/                           # Python library + CLI (opengpl-sdk on PyPI)
 │   └── src/opengpl/               # from opengpl import PolicyEngine
-├── sidecar/                       # Docker enforcement proxy (opengpl/sidecar on Docker Hub)
+├── sidecar/                       # HTTP decision sidecar (ghcr.io/sadayamuthu/opengpl/sidecar)
 │   ├── Dockerfile
 │   └── docker-compose.example.yml
-└── .github/workflows/             # Release pipelines (PyPI, Docker Hub, GHCR, opengpl.org)
+└── .github/workflows/             # Release pipelines (PyPI, GHCR, opengpl.org)
 ```
 
 ---
 
-## Compliance Frameworks Supported
+## Implementation status
 
-| Framework | Coverage |
+OpenGPL is a public draft. The spec describes what a conforming runtime does;
+the reference SDK (`opengpl-sdk` 0.1.3) implements part of it today.
+
+| Policy block | Reference SDK today |
 |---|---|
-| NIST AI Risk Management Framework | Full control mapping |
-| FedRAMP Low / Moderate / High | Full control mapping + OSCAL output |
-| HIPAA Technical Safeguards | Full coverage |
+| Schema validation (all blocks) | ✅ Enforced: `opengpl validate`, and on every `PolicyEngine` load |
+| `input_controls.detect`: `prompt_injection`, `jailbreak` | ⚠️ Heuristic: a small set of regex patterns for well-known phrasings; easy to evade |
+| `input_controls.sanitize` | ⏳ Parsed, not applied. PII helpers are in `opengpl.detectors.pii` (regex by default; Presidio with the `[pii]` extra) |
+| `output_controls.block`: `SSN`, `PHI`, `credit_card`, `credentials` | ⚠️ Heuristic: regex and keyword matching |
+| Other `output_controls` (`redact`, `require`, `hallucination_threshold`, topics) | ⏳ Parsed, not enforced |
+| `model_controls` (tools, trust levels, human-in-loop) | ⏳ Parsed, not enforced; the model gate always allows |
+| `enforcement.on_violation` | ⏳ Violations always return `BLOCK` |
+| `audit` | ⚠️ In-memory ledger; `opengpl audit` writes a minimal OSCAL stub, not a full artifact |
+
+Use the SDK to try the language and to prototype. Don't rely on it as your
+only defence against prompt injection or data leakage yet. Contributions to
+any ⏳ row are welcome.
+
+---
+
+## Compliance Framework Mapping
+
+The spec maps policy fields to controls in each framework. A mapping shows
+which controls a policy can express evidence for. It is not a certification,
+and the reference SDK does not yet produce assessor-ready evidence (see
+[Implementation status](#implementation-status)).
+
+| Framework | Mapping in the spec |
+|---|---|
+| NIST AI Risk Management Framework | GOVERN, MAP, MEASURE, MANAGE functions |
+| FedRAMP Low / Moderate / High (NIST SP 800-53) | AC, AU, CM, IA, SC, SI control families |
+| HIPAA Technical Safeguards | §164.312 safeguards |
 | EU AI Act (High-Risk) | Articles 10, 11, 13, 14, 15 |
-| SOC 2 (Trust Service Criteria) | Full coverage |
-| ISO/IEC 42001 | Partial |
-| India DPDPA | Partial |
+| SOC 2 (Trust Service Criteria) | Common Criteria (CC6, CC7) |
+| ISO/IEC 42001 | Partial (planned for v0.2) |
+| India DPDPA | Partial (planned for v0.2) |
+
+Details: [compliance-mapping.md](./spec/docs/compliance-mapping.md).
 
 ---
 
@@ -244,10 +279,9 @@ Replace `my-policy.gpl` with the path to your policy file.
 OpenGPL is an open standard maintained by **OpenAstra** at [openastra.org](https://openastra.org).
 
 - 📖 Read the [full specification](./spec/SPEC.md)
-- 💬 Join [GitHub Discussions](https://github.com/sadayamuthu/opengpl/discussions)
-- 🐛 File issues for spec clarifications or bugs
-- 📝 Submit pull requests for examples, schema fixes, or doc improvements
-- 🗳️ Participate in [GitHub Discussions](https://openastra.org/opengpl)
+- 💬 Ask questions and propose ideas in [GitHub Discussions](https://github.com/sadayamuthu/opengpl/discussions)
+- 🐛 File [issues](https://github.com/sadayamuthu/opengpl/issues) for spec clarifications or bugs
+- 📝 Submit pull requests for examples, schema fixes, detectors, or doc improvements
 
 All specification changes require a **30-day public comment period**.
 See [CONTRIBUTING.md](./spec/CONTRIBUTING.md) for full governance details.

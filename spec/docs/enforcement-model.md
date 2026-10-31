@@ -1,6 +1,6 @@
 # OpenGPL Enforcement Model
 
-This document describes how OpenGPL policies are evaluated and enforced at runtime by the OpenLSP enforcement engine.
+This document describes how OpenGPL policies are evaluated and enforced at runtime by an OpenGPL-compatible runtime. It is normative for runtimes; the reference implementation, `opengpl-sdk`, implements only part of it today (see [Implementation status](../../README.md#implementation-status)).
 
 **Maintained by OpenAstra — [openastra.org/opengpl](https://openastra.org/opengpl)**
 
@@ -21,7 +21,7 @@ OpenGPL enforcement follows the **Policy Decision Point / Policy Enforcement Poi
 
 ```
   ┌─────────────────────────────────────────────────────────────┐
-  │                     OpenLSP Gateway                         │
+  │                  OpenGPL Runtime / Gateway                  │
   │                                                             │
   │  User/Agent Request                                         │
   │         │                                                   │
@@ -76,7 +76,7 @@ When a request is received, controls are applied in strict sequence:
 
 ### Step 2 — Trust Level Assignment
 - Determine trust level from `model_controls.trust_level`
-- If OpenID.ai is integrated, trust level may be elevated based on verified identity
+- If an identity provider is integrated, trust level may be elevated based on verified identity
 - Trust level affects default permissiveness of subsequent evaluations
 
 ### Step 3 — Input Gate (input_controls)
@@ -165,7 +165,7 @@ If any applicable policy evaluates to `DENY`, the request is denied regardless o
 
 ## Fail-Safe Behavior
 
-The `enforcement.fallback` field defines what happens when OpenLSP is unavailable or fails to evaluate:
+The `enforcement.fallback` field defines what happens when the enforcement runtime is unavailable or fails to evaluate:
 
 ```yaml
 enforcement:
@@ -181,7 +181,7 @@ enforcement:
 
 The `hallucination_threshold` field is a novel OpenGPL primitive with no equivalent in prior policy languages.
 
-OpenLSP computes a hallucination risk score (0.0–1.0) for each response using a combination of:
+A runtime that supports this field computes a hallucination risk score (0.0–1.0) for each response, for example from a combination of the following. (The reference SDK does not enforce this field yet.)
 - Factual consistency checks against retrieved context
 - Confidence calibration signals from the model
 - Self-consistency sampling across multiple passes
@@ -204,7 +204,7 @@ If the computed score exceeds the configured threshold, the `on_violation` actio
 
 ## Performance Considerations
 
-OpenLSP is designed for sub-50ms policy evaluation overhead on standard hardware. Key performance characteristics:
+Runtimes should target sub-50ms policy evaluation overhead on standard hardware. The figures below are design targets, not measured results; benchmarks for the reference SDK are planned.
 
 - Policy compilation is cached on load — no per-request compilation cost
 - Input gate evaluation: ~5–15ms (detection + sanitization)
@@ -212,7 +212,7 @@ OpenLSP is designed for sub-50ms policy evaluation overhead on standard hardware
 - OSCAL artifact generation: async — does not block response delivery
 - Alert dispatch: async — does not block response delivery
 
-For high-throughput deployments, OpenLSP supports horizontal scaling with shared policy store.
+For high-throughput deployments, runtimes should support horizontal scaling with a shared policy store.
 
 ---
 

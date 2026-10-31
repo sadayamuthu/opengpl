@@ -72,7 +72,7 @@ audit:
   alert_channels: [slack, siem]
 
 enforcement:
-  engine: OpenLSP
+  engine: opengpl-sdk
   on_violation: BLOCK
   on_detection: ALERT
   fallback: DENY
@@ -132,7 +132,7 @@ audit:
   alert_channels: [slack, siem]
 
 enforcement:
-  engine: OpenLSP
+  engine: opengpl-sdk
   on_violation: BLOCK
   fallback: DENY
 
@@ -204,7 +204,7 @@ audit:
   alert_channels: [pagerduty, siem, slack]
 
 enforcement:
-  engine: OpenLSP
+  engine: opengpl-sdk
   on_violation: BLOCK
   on_detection: ESCALATE       # Escalate detections to human review
   fallback: DENY
