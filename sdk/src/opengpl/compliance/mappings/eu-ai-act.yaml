@@ -24,7 +24,7 @@ entries:
     field: output_controls.hallucination_threshold
     when: {present: true}
     statement: "output_controls.hallucination_threshold is {value}; the policy declares the maximum acceptable hallucination risk score for a response."
-    rationale: "Art. 15(1) (an appropriate level of accuracy): the field sets an accuracy criterion that responses must meet. Policy declaration; the SDK does not score hallucination, and Art. 15(3) declaration in the instructions for use is not covered."
+    rationale: "Art. 15(1) (an appropriate level of accuracy): the field declares an accuracy criterion. It does not establish that the level is appropriate, nor measure it; the SDK does not score hallucination, and Art. 15(3) declaration in the instructions for use is not covered."
   - control: art-15.4
     field: enforcement.fallback
     when: {in: [DENY, BLOCK]}

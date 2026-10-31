@@ -44,3 +44,15 @@ def test_no_assessment_language():
     doc, _ = component_definition(fedramp, "FedRAMP-Moderate", now=NOW)
     text = json.dumps(doc).lower()
     assert "satisfied" not in text and "compliant" not in text and "controlgate" not in text
+
+def test_component_wording_does_not_claim_enforcement():
+    doc, _ = component_definition(fedramp, "FedRAMP-Moderate", now=NOW)
+    comp = doc["component-definition"]["components"][0]
+    assert comp["title"] == "fedramp-moderate-agent (OpenGPL policy evaluated by opengpl-sdk)"
+    assert "enforce" not in comp["description"].lower()
+
+@pytest.mark.parametrize("gpl", sorted(EX.glob("*.gpl")), ids=lambda p: p.name)
+def test_examples_make_no_enforcement_or_suitability_claims(gpl):
+    import re
+    text = gpl.read_text()
+    assert not re.search(r"(?i)\benforces\b|\bsuitable for\b|\bcompliant\b|^#\s*compliance:", text, re.M)

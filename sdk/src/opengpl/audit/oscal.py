@@ -71,7 +71,7 @@ def component_definition(
     component: dict = {
         "uuid": _uuid(f"comp:{name}:{version}:{framework}"),
         "type": "software",
-        "title": f"{name} (OpenGPL policy enforced by opengpl-sdk)",
+        "title": f"{name} (OpenGPL policy evaluated by opengpl-sdk)",
         "description": (policy.get("description") or "").strip() or f"OpenGPL policy {name}",
         "props": props,
     }

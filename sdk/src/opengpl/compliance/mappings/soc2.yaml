@@ -1,6 +1,6 @@
 # OpenGPL policy field -> AICPA 2017 Trust Services Criteria (TSP Section 100), common criteria mapping.
 # Criterion IDs and text verified against TSP Section 100 (March 2020 edition); criteria text is unchanged
-# in the 2022 points-of-focus revision.
+# in the 2022 points-of-focus revision. Points of focus quoted below are cited from the March 2020 edition.
 # Status (enforced/heuristic/declared) is computed from the SDK registry, not here.
 framework: SOC2-TSC-2017
 entries:
@@ -33,4 +33,4 @@ entries:
     field: input_controls.detect
     when: {any_of: [prompt_injection, jailbreak, context_stuffing, role_confusion, data_exfiltration, adversarial_elicitation]}
     statement: "input_controls.detect includes {value}; the policy declares detection of these attacks on model inputs."
-    rationale: "CC7.2 (monitors system components for anomalies indicative of malicious acts; point of focus 'Implements Detection Policies, Procedures, and Tools'): input detectors flag attack attempts. It does not cover analysis into security events."
+    rationale: "CC7.2 (monitors system components for anomalies indicative of malicious acts; point of focus 'Implements Detection Policies, Procedures, and Tools'): input detectors flag attack attempts, for the classes the runtime detects. It does not cover analysis into security events."

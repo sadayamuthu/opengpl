@@ -42,7 +42,7 @@ entries:
     field: input_controls.require_user_auth
     when: {"true": true}
     statement: "input_controls.require_user_auth is true; the policy declares that requests must come from an authenticated user."
-    rationale: "IA-2 identification and authentication of organizational users: policy requires users to be authenticated before requests are accepted."
+    rationale: "IA-2 identification and authentication of organizational users: declaration only; the policy states that requests must come from authenticated users, and authentication is performed outside the SDK."
   - control: sc-7
     field: model_controls.allow_external_calls
     when: {"false": true}
