@@ -4,6 +4,7 @@ import pytest
 import yaml
 
 from opengpl.compliance.mapping import (
+    _validate_entries,
     FRAMEWORK_FILES,
     UnknownFramework,
     applicable_controls,
@@ -91,3 +92,31 @@ def test_every_entry_has_rationale():
 def test_list_evidence_is_one_item_per_value():
     p = {"input_controls": {"detect": ["jailbreak", "toxicity"]}}
     assert ids(p)["si-10"].evidence == ("input_controls.detect=jailbreak",)
+
+
+def test_ac6_not_mapped():
+    assert "ac-6" not in {e.control for e in load_mappings("FedRAMP-High")}
+
+
+def _entry(**over):
+    e = {"control": "ac-3", "field": "a.b", "when": {"present": True}, "statement": "s", "rationale": "r"}
+    e.update(over)
+    return e
+
+
+def test_validation_accepts_good_entry_and_bool_keys():
+    _validate_entries("t.yaml", [_entry(), _entry(when={True: True})])
+
+
+@pytest.mark.parametrize("bad,msg", [
+    (_entry(when={"bogus": 1}), "unknown op"),
+    (_entry(when={}), "exactly one op"),
+    (_entry(when={"present": True, "equals": 1}), "exactly one op"),
+    (_entry(when={"in": "FULL"}), "list argument"),
+    (_entry(when={"any_of": "x"}), "list argument"),
+    ({k: v for k, v in _entry().items() if k != "rationale"}, "rationale"),
+    (_entry(statement="  "), "statement"),
+])
+def test_validation_rejects_malformed(bad, msg):
+    with pytest.raises(ValueError, match=r"t\.yaml entry 1: .*" + msg):
+        _validate_entries("t.yaml", [_entry(), bad])

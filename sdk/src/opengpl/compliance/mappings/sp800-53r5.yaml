@@ -18,11 +18,6 @@ entries:
     when: {"false": true}
     statement: "model_controls.allow_external_calls is false; the policy declares that the model may not send information to external systems."
     rationale: "AC-4 information flow enforcement: restricts flow of information from the system to connected external systems."
-  - control: ac-6
-    field: model_controls.trust_level
-    when: {in: [UNTRUSTED, LOW]}
-    statement: "model_controls.trust_level is {value}; the policy declares a restricted privilege tier for the model."
-    rationale: "AC-6 least privilege: a low trust tier declares that the model acts with reduced privileges (declaration of posture only)."
   - control: au-2
     field: audit.log_level
     when: {in: [STANDARD, FULL, DEBUG]}
@@ -52,12 +47,12 @@ entries:
     field: model_controls.allow_external_calls
     when: {"false": true}
     statement: "model_controls.allow_external_calls is false; the policy declares that the model may not communicate with external systems."
-    rationale: "SC-7 boundary protection (item a/c): limits communications across the system's external interface."
+    rationale: "SC-7 boundary protection (item a): policy declaration restricting communications at the system's external interface; it does not implement managed interfaces or boundary devices (item c)."
   - control: si-4
     field: audit.alert_on_violation
     when: {"true": true}
-    statement: "audit.alert_on_violation is true; the policy declares that policy violations raise an alert."
-    rationale: "SI-4 system monitoring (items a, g): alerts on detected attacks and indicators of potential attacks."
+    statement: "audit.alert_on_violation is true; the policy declares that a policy violation raises an alert to the configured recipients."
+    rationale: "SI-4 system monitoring (item g): policy declaration that monitoring information (violation alerts) is provided to personnel; it does not implement detection (item a)."
   - control: si-10
     field: input_controls.detect
     when: {any_of: [prompt_injection, jailbreak, context_stuffing, data_exfiltration]}

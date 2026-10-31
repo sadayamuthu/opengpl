@@ -45,10 +45,41 @@ def _norm_when(when: dict) -> dict:
     return {("true" if k is True else "false" if k is False else k): v for k, v in when.items()}
 
 
+_OPS = {"equals", "in", "any_of", "true", "false", "present"}
+
+
+def _validate_entries(filename: str, entries: list) -> None:
+    """Fail fast on malformed mapping entries."""
+    for i, e in enumerate(entries):
+        def bad(problem: str) -> ValueError:
+            return ValueError(f"{filename} entry {i}: {problem}")
+
+        if not isinstance(e, dict):
+            raise bad("entry is not a mapping")
+        for key in ("control", "field", "when", "statement", "rationale"):
+            if key not in e:
+                raise bad(f"missing key {key!r}")
+        for key in ("control", "field", "statement", "rationale"):
+            if not isinstance(e[key], str) or not e[key].strip():
+                raise bad(f"{key!r} must be a non-empty string")
+        when = e["when"]
+        if not isinstance(when, dict):
+            raise bad("'when' must be a mapping")
+        ops = _norm_when(when)
+        if len(ops) != 1:
+            raise bad(f"'when' must have exactly one op, found {len(ops)}")
+        (op, arg), = ops.items()
+        if op not in _OPS:
+            raise bad(f"unknown op {op!r}")
+        if op in ("in", "any_of") and not isinstance(arg, list):
+            raise bad(f"{op!r} requires a list argument")
+
+
 @lru_cache(maxsize=None)
 def _load(filename: str) -> tuple[MappingEntry, ...]:
     text = (files("opengpl.compliance") / "mappings" / filename).read_text(encoding="utf-8")
     doc = yaml.safe_load(text)
+    _validate_entries(filename, doc["entries"])
     return tuple(
         MappingEntry(
             framework=doc["framework"],
