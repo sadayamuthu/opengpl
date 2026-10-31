@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Validate all .gpl example policies against the OpenGPL JSON Schema."""
+
 import json
 import pathlib
 import sys
-import yaml
+
 import jsonschema
+import yaml
 
 REPO_ROOT = pathlib.Path(__file__).parent.parent
 SCHEMA_PATH = REPO_ROOT / "schemas" / "opengpl-v0.1.json"

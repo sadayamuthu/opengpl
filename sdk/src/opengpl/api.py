@@ -1,8 +1,9 @@
 # src/opengpl/api.py
+import yaml
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import yaml
+
 from opengpl.loader import validate_schema
 
 app = FastAPI(title="OpenGPL Validation API", version="0.1.0")

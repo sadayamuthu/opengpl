@@ -4,9 +4,9 @@ import pytest
 import yaml
 
 from opengpl.compliance.mapping import (
-    _validate_entries,
     FRAMEWORK_FILES,
     UnknownFramework,
+    _validate_entries,
     applicable_controls,
     get_field,
     load_mappings,
@@ -51,12 +51,22 @@ def test_unknown_framework():
 
 def test_sorted_numerically():
     ctl = [c.control for c in applicable_controls(fedramp, "FedRAMP-Moderate")]
-    assert ctl == sorted(ctl, key=lambda c: (c.split("-")[0], [int(x) for x in c.split("-")[1].split(".")]))
+    assert ctl == sorted(
+        ctl, key=lambda c: (c.split("-")[0], [int(x) for x in c.split("-")[1].split(".")])
+    )
     assert ctl.index("au-3") < ctl.index("au-11")
 
 
 def test_framework_files_and_get_field():
-    assert set(FRAMEWORK_FILES) == {"FedRAMP-Low", "FedRAMP-Moderate", "FedRAMP-High", "NIST-AI-RMF", "EU-AI-Act", "HIPAA", "SOC2"}
+    assert set(FRAMEWORK_FILES) == {
+        "FedRAMP-Low",
+        "FedRAMP-Moderate",
+        "FedRAMP-High",
+        "NIST-AI-RMF",
+        "EU-AI-Act",
+        "HIPAA",
+        "SOC2",
+    }
     assert get_field({"a": {"b": 1}}, "a.b") == 1
     assert get_field({"a": {}}, "a.b") is None
     assert get_field({"a": 3}, "a.b") is None
@@ -99,7 +109,13 @@ def test_ac6_not_mapped():
 
 
 def _entry(**over):
-    e = {"control": "ac-3", "field": "a.b", "when": {"present": True}, "statement": "s", "rationale": "r"}
+    e = {
+        "control": "ac-3",
+        "field": "a.b",
+        "when": {"present": True},
+        "statement": "s",
+        "rationale": "r",
+    }
     e.update(over)
     return e
 
@@ -108,15 +124,18 @@ def test_validation_accepts_good_entry_and_bool_keys():
     _validate_entries("t.yaml", [_entry(), _entry(when={True: True})])
 
 
-@pytest.mark.parametrize("bad,msg", [
-    (_entry(when={"bogus": 1}), "unknown op"),
-    (_entry(when={}), "exactly one op"),
-    (_entry(when={"present": True, "equals": 1}), "exactly one op"),
-    (_entry(when={"in": "FULL"}), "list argument"),
-    (_entry(when={"any_of": "x"}), "list argument"),
-    ({k: v for k, v in _entry().items() if k != "rationale"}, "rationale"),
-    (_entry(statement="  "), "statement"),
-])
+@pytest.mark.parametrize(
+    "bad,msg",
+    [
+        (_entry(when={"bogus": 1}), "unknown op"),
+        (_entry(when={}), "exactly one op"),
+        (_entry(when={"present": True, "equals": 1}), "exactly one op"),
+        (_entry(when={"in": "FULL"}), "list argument"),
+        (_entry(when={"any_of": "x"}), "list argument"),
+        ({k: v for k, v in _entry().items() if k != "rationale"}, "rationale"),
+        (_entry(statement="  "), "statement"),
+    ],
+)
 def test_validation_rejects_malformed(bad, msg):
     with pytest.raises(ValueError, match=r"t\.yaml entry 1: .*" + msg):
         _validate_entries("t.yaml", [_entry(), bad])

@@ -1,305 +1,186 @@
-<div align="center">
-
-<!-- <img src="https://openastra.org/assets/opengpl-logo.svg" alt="OpenGPL" width="120" /> -->
-
 # OpenGPL
 
-## Governance Policy Language
+[![CI](https://github.com/sadayamuthu/opengpl/actions/workflows/ci.yml/badge.svg)](https://github.com/sadayamuthu/opengpl/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/opengpl-sdk?logo=pypi&logoColor=white)](https://pypi.org/project/opengpl-sdk/)
+[![Python](https://img.shields.io/pypi/pyversions/opengpl-sdk?logo=python&logoColor=white)](https://pypi.org/project/opengpl-sdk/)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fsadayamuthu%2Fopengpl%2Fsidecar-2496ED?logo=docker&logoColor=white)](https://github.com/sadayamuthu/opengpl/pkgs/container/opengpl%2Fsidecar)
+[![Spec](https://img.shields.io/badge/spec-v0.1%20public%20draft-orange)](spec/SPEC.md)
+[![License](https://img.shields.io/github/license/sadayamuthu/opengpl)](LICENSE)
 
-The open policy language for generative AI systems and dynamic systems
+A policy language for AI agents that produces compliance evidence. One
+`.gpl` file says what an agent may take in, what it may produce, which tools
+and networks it may use, and which compliance frameworks you're answering to.
+The `opengpl` SDK checks prompts and responses against the policy at runtime,
+records every decision, and turns the policy and its decision log into
+[OSCAL](https://pages.nist.gov/OSCAL/) that an assessor can read: which NIST
+SP 800-53 controls the policy addresses, and the runtime decisions behind them.
 
-[![Version](https://img.shields.io/badge/version-v0.1--draft-blue?style=flat-square)](https://github.com/sadayamuthu/opengpl/releases)
-[![Status](https://img.shields.io/badge/status-Public%20Draft-orange?style=flat-square)](https://github.com/sadayamuthu/opengpl/blob/main/spec/SPEC.md)
-[![License: CC BY 4.0](https://img.shields.io/badge/Spec%20License-CC%20BY%204.0-green?style=flat-square)](https://creativecommons.org/licenses/by/4.0/)
-[![License: Apache 2.0](https://img.shields.io/badge/Code%20License-Apache%202.0-green?style=flat-square)](https://opensource.org/licenses/Apache-2.0)
-[![OpenAstra](https://img.shields.io/badge/Governed%20by-OpenAstra%20Standards-1B4F8A?style=flat-square)](https://openastra.org)
-[![Discussions](https://img.shields.io/badge/Discuss-GitHub%20Discussions-purple?style=flat-square)](https://github.com/sadayamuthu/opengpl/discussions)
+It is honest about what it enforces. Every control in the output is marked
+`enforced`, `heuristic` or `declared`, and the output never claims a control
+is met. That judgement stays with the assessor.
 
----
+![A support-agent policy is validated; the app blocks a prompt injection and a card number in a reply and logs each decision; opengpl audit turns the policy and log into OSCAL, with each control marked enforced, heuristic or declared](demo/demo.gif)
 
-<sub>Not related to the GNU General Public License. "GPL" here stands for <b>Governance Policy Language</b>. OpenGPL itself is licensed CC BY 4.0 (spec) and Apache 2.0 (code).</sub>
+<sub>Not related to the GNU General Public License: GPL here stands for
+Governance Policy Language.</sub>
 
----
-
-[Specification](./spec/SPEC.md) · [Schema](./spec/schemas/) · [Examples](./spec/examples/) · [Changelog](./spec/CHANGELOG.md) · [Contributing](./spec/CONTRIBUTING.md) · [openastra.org](https://openastra.org) · [opengpl.org](https://opengpl.org)
-
-</div>
-
----
-
-## What is OpenGPL?
-
-OpenGPL (Governance Policy Language) is an open, declarative policy language purpose-built for generative AI systems and dynamic systems. It defines **how AI agents behave**, what resources they can access, what they can produce, and how they demonstrate compliance — at runtime and at rest.
+## What a policy looks like
 
 ```yaml
 opengpl: '0.1'
-policy: customer-service-agent
+policy: support-agent
 version: '1.0.0'
-description: Governs the customer-facing AI support agent
+description: Customer-support agent running inside a FedRAMP Moderate boundary
+status: ACTIVE
+owner: security-team
 
 applies_to:
-  models: ['gpt-4o', 'claude-3-5-sonnet']
+  models: ['*']
   contexts: [customer-service]
 
 input_controls:
   detect: [prompt_injection, jailbreak]
-  sanitize: [pii, credentials]
+
+model_controls:
+  allow_tools: [kb_search, ticket_lookup]
+  allow_external_calls: false
 
 output_controls:
-  block: [SSN, PHI, credit_card]
-  require: [source_attribution]
+  block: [SSN, credit_card, credentials]
 
 audit:
   log_level: FULL
   format: OSCAL
-  compliance: [FedRAMP-Moderate, SOC2]
+  compliance: [FedRAMP-Moderate]
 
 enforcement:
   engine: opengpl-sdk
   on_violation: BLOCK
 ```
 
----
+For this policy, `opengpl audit` reports seven NIST SP 800-53 Rev 5 controls
+in the Moderate baseline:
 
-## Why OpenGPL?
+| Control | Status | Why |
+|---------|--------|-----|
+| AU-2, AU-3, AU-12 | `enforced` | The SDK writes a decision record for every check |
+| SI-10 | `heuristic` | Injection and jailbreak detection are regular expressions |
+| AC-3, AC-4, SC-7 | `declared` | Tool and network limits are stated but not yet enforced by the SDK |
 
-Existing policy languages — OPA/Rego, AWS Cedar, HashiCorp Sentinel — were built for **deterministic systems**. Generative AI breaks every assumption they were built on:
+## What it does
 
-| Challenge | Deterministic Systems | Generative AI Systems |
-|---|---|---|
-| Output predictability | Binary, fully known | Probabilistic, context-dependent |
-| Policy evaluation | Pattern matching | Semantic reasoning required |
-| Compliance evidence | Static logs | Dynamic, session-based artifacts |
-| Trust model | User → Resource | Agent → Model → Tool → Output |
-| Threat model | Known attack patterns | Novel, adaptive (prompt injection, jailbreaks) |
+| | Today, in `opengpl-sdk` 0.2 |
+|---|---|
+| **Validate** | Every policy is checked against the JSON Schema on load and by `opengpl validate` |
+| **Check input** | Prompt-injection and jailbreak detection (heuristic: regular expressions for well-known phrasings) |
+| **Check output** | Blocks SSNs, card numbers, credentials and PHI keywords (heuristic: patterns and keywords) |
+| **Record** | A JSONL decision log; prompt and response text is hashed, or redacted at `log_level: FULL` |
+| **Evidence** | OSCAL 1.2.3 component definitions and assessment results for FedRAMP Low, Moderate and High (NIST SP 800-53 Rev 5 baselines) |
+| **Map** | Mapping tables for NIST AI RMF, EU AI Act, HIPAA and SOC 2 ([compliance-mapping.md](spec/docs/compliance-mapping.md)) |
 
-**OpenGPL is built for the generative world.**
+Not yet enforced: `model_controls` (tools, trust levels, human-in-the-loop),
+`input_controls.sanitize`, most of `output_controls`, and
+`enforcement.on_violation` (violations always return `BLOCK`). The full
+table is in [Implementation status](USAGE.md#implementation-status). Use
+the SDK to try the language and to prototype; don't rely on it as your only
+defence against prompt injection or data leakage yet.
 
----
+## Install
 
-## Core Features
+OpenGPL needs **Python 3.11 or newer**.
 
-- **🔒 Four-plane policy control** — Input, Model, Output, and Audit planes in a single document
-- **🤖 LLM-native** — Trust levels, hallucination thresholds, and tool access as first-class primitives in the language
-- **📋 Compliance-first** — Policy fields map to FedRAMP, NIST AI RMF, HIPAA, and EU AI Act controls
-- **📄 OSCAL output** — Policies are designed to emit OSCAL compliance evidence (`opengpl audit` writes an OSCAL component definition and assessment results for FedRAMP Low, Moderate and High)
-- **🧩 Composable** — Inherit and extend base policies; wildcard agent matching
-- **🔓 Open standard** — Governed by OpenAstra, licensed CC BY 4.0; no vendor lock-in
-- **⚙️ Framework-agnostic** — Works with any LLM provider or agent framework
+**pip**:
 
----
-
-## Quick Start
-
-### 1. Install the OpenGPL SDK
-
-```bash
+```sh
 pip install opengpl-sdk
-# Optional: NLP-based PII detection (larger install)
-# pip install "opengpl-sdk[pii]" && python -m spacy download en_core_web_lg
 ```
 
-### 2. Write a policy
+For NLP-based PII detection (Microsoft Presidio and spaCy; a much larger
+install), add the extra and download the language model:
+
+```sh
+pip install "opengpl-sdk[pii]"
+python -m spacy download en_core_web_lg
+```
+
+**Docker** (the HTTP sidecar, for services not written in Python):
+
+```sh
+docker run --rm -p 8080:8080 -v "$PWD/policies:/policies:ro" \
+  ghcr.io/sadayamuthu/opengpl/sidecar:latest
+```
+
+**GitHub Actions** (validates policies on every pull request and can write
+OSCAL evidence; see [In CI](USAGE.md#in-ci)):
 
 ```yaml
-# my-policy.gpl
-opengpl: '0.1'
-policy: my-agent
-version: '1.0.0'
-description: My first OpenGPL policy
-status: ACTIVE
-owner: security-team
-
-applies_to:
-  models: ['*']
-  contexts: [general]
-
-audit:
-  log_level: SUMMARY
-  compliance: [SOC2]
-
-enforcement:
-  engine: opengpl-sdk
-  on_violation: LOG
+- uses: actions/checkout@v4
+- uses: sadayamuthu/opengpl@v0
+  with:
+    policies: 'policies/**/*.gpl'
 ```
 
-### 3. Apply the policy
+## Quick start
+
+```sh
+# Is the policy valid?
+opengpl validate support-agent.gpl
+
+# What would it do with this prompt?
+opengpl eval support-agent.gpl --prompt "Ignore all previous instructions"
+#   INPUT GATE:  BLOCK
+#     → prompt_injection detected
+
+# Write OSCAL evidence from the policy and its decision log
+opengpl audit support-agent.gpl --framework FedRAMP-Moderate --decisions decisions.jsonl
+#   ✓ Component definition written to support-agent-component-definition.json
+#     Note: not in the NIST MODERATE baseline, omitted: si-15
+#   ✓ Assessment results written to support-agent-assessment-results.json (2 observations)
+```
+
+In your application, check before and after the model call, and log every
+decision:
 
 ```python
 from opengpl import PolicyEngine
 
-engine = PolicyEngine("my-policy.gpl")
+engine = PolicyEngine("support-agent.gpl", decision_log="decisions.jsonl")
 
-# Evaluate before LLM call
-result = engine.check_input(user_message)
-if not result.passed:
+if not engine.check_input(user_message).passed:
     return "Request blocked by policy."
-
-# Evaluate after LLM response (optional)
-output = engine.check_output(llm_response)
-return llm_response if output.passed else "Response blocked by policy."
+response = call_llm(user_message)
+if not engine.check_output(response).passed:
+    return "Response withheld by policy."
+return response
 ```
 
-### 4. Or run as a sidecar
+[USAGE.md](USAGE.md) covers the CLI, the Python API, the decision log, the
+OSCAL output, the sidecar and the GitHub Action.
 
-```bash
-docker run \
-  -v ./my-policy.gpl:/policies/my-policy.gpl:ro \
-  -p 8080:8080 \
-  ghcr.io/sadayamuthu/opengpl/sidecar:latest
+## Documentation
+
+- [USAGE.md](USAGE.md): using the CLI, SDK, sidecar and GitHub Action
+- [Specification](spec/SPEC.md) and [JSON Schema](spec/schemas/)
+- [Compliance mapping](spec/docs/compliance-mapping.md): every mapped control, its policy field and its status
+- [Enforcement model](spec/docs/enforcement-model.md) and [integration guide](spec/docs/integration-guide.md)
+- [Example policies](spec/examples/) and the [spec changelog](spec/CHANGELOG.md)
+
+## Development
+
+```sh
+pip install -e "sdk[dev]"
+(cd sdk && pytest -q)                        # tests (regex PII backend)
+ruff check . && ruff format --check .        # lint and format
+python spec/scripts/validate_examples.py     # example policies are valid
+python spec/scripts/gen_compliance_mapping.py --check   # generated tables are current
 ```
 
-```bash
-curl -X POST http://localhost:8080/input/check \
-  -H "Content-Type: application/json" \
-  -d '{"policy": "my-policy.gpl", "prompt": "What is my account balance?"}'
-```
-
----
-
-## Repository Structure
-
-```text
-opengpl/
-├── spec/                          # OpenGPL specification and schema
-│   ├── SPEC.md                    # Full OpenGPL v0.1 specification
-│   ├── CHANGELOG.md               # Version history
-│   ├── CONTRIBUTING.md            # How to contribute
-│   ├── LICENSE-SPEC               # CC BY 4.0 (specification)
-│   ├── LICENSE-CODE               # Apache 2.0 (reference code)
-│   ├── schemas/
-│   │   ├── opengpl-v0.1.json      # JSON Schema for validation
-│   │   └── opengpl-v0.1.yaml      # YAML Schema reference
-│   ├── examples/
-│   │   ├── minimal.gpl            # Minimal valid policy
-│   │   ├── healthcare-hipaa.gpl   # Healthcare / HIPAA example
-│   │   ├── fedramp-moderate.gpl   # FedRAMP Moderate example
-│   │   ├── multi-agent.gpl        # Multi-agent trust hierarchy
-│   │   └── dev-sandbox.gpl        # Development sandbox policy
-│   └── docs/
-│       ├── compliance-mapping.md  # Framework mapping reference
-│       ├── enforcement-model.md   # How enforcement works
-│       └── integration-guide.md   # LangChain, AutoGen, direct API
-├── sdk/                           # Python library + CLI (opengpl-sdk on PyPI)
-│   └── src/opengpl/               # from opengpl import PolicyEngine
-├── sidecar/                       # HTTP decision sidecar (ghcr.io/sadayamuthu/opengpl/sidecar)
-│   ├── Dockerfile
-│   └── docker-compose.example.yml
-└── .github/workflows/             # Release pipelines (PyPI, GHCR, opengpl.org)
-```
-
----
-
-## Implementation status
-
-OpenGPL is a public draft. The spec describes what a conforming runtime does;
-the reference SDK (`opengpl-sdk` 0.2.0) implements part of it today.
-
-| Policy block | Reference SDK today |
-|---|---|
-| Schema validation (all blocks) | ✅ Enforced: `opengpl validate`, and on every `PolicyEngine` load |
-| `input_controls.detect`: `prompt_injection`, `jailbreak` | ⚠️ Heuristic: a small set of regex patterns for well-known phrasings; easy to evade |
-| `input_controls.sanitize` | ⏳ Parsed, not applied. PII helpers are in `opengpl.detectors.pii` (regex by default; Presidio with the `[pii]` extra) |
-| `output_controls.block`: `SSN`, `PHI`, `credit_card`, `credentials` | ⚠️ Heuristic: regex and keyword matching |
-| Other `output_controls` (`redact`, `require`, `hallucination_threshold`, topics) | ⏳ Parsed, not enforced |
-| `model_controls` (tools, trust levels, human-in-loop) | ⏳ Parsed, not enforced; the model gate always allows |
-| `enforcement.on_violation` | ⏳ Violations always return `BLOCK` |
-| `audit` | ✅ JSONL decision log; `opengpl audit` writes an OSCAL 1.2.3 component definition and assessment results (observations only, no findings) for FedRAMP Low, Moderate and High, against NIST SP 800-53 Rev 5 baselines. Each control carries an `implementation-status` of `enforced`, `heuristic` or `declared` |
-
-Use the SDK to try the language and to prototype. Don't rely on it as your
-only defence against prompt injection or data leakage yet. Contributions to
-any ⏳ row are welcome.
-
----
-
-## Compliance Framework Mapping
-
-The spec maps policy fields to controls in each framework. A mapping shows
-which controls a policy can express evidence for. It is not a certification.
-Only FedRAMP Low, Moderate and High have OSCAL output today; the other
-frameworks are mapping tables only (see
-[Implementation status](#implementation-status)).
-
-| Framework | Mapping in the spec |
-|---|---|
-| NIST AI Risk Management Framework | GOVERN, MAP, MEASURE, MANAGE functions |
-| FedRAMP Low / Moderate / High (NIST SP 800-53) | AC, AU, IA, SC, SI control families |
-| HIPAA Technical Safeguards | §164.312(b) and (d) |
-| EU AI Act (High-Risk) | Articles 12, 13, 14, 15 |
-| SOC 2 (Trust Service Criteria) | Common Criteria (CC6, CC7) |
-| ISO/IEC 42001 | Partial (planned for spec v0.2) |
-| India DPDPA | Partial (planned for spec v0.2) |
-
-Details: [compliance-mapping.md](./spec/docs/compliance-mapping.md).
-
----
-
-## Using the Schema
-
-The OpenGPL JSON Schema is published at:
-
-```text
-https://opengpl.org/schema/v0.1/schema.json
-```
-
-> **Note:** This URL is live once the `v0.1.0` release is published via the release workflow.
-> Until then, use the raw GitHub URL:
-> `https://raw.githubusercontent.com/sadayamuthu/opengpl/main/spec/schemas/opengpl-v0.1.json`
-
-### Editor Support (VS Code)
-
-Install the [YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) and add this comment to the top of any policy file:
-
-```yaml
-# yaml-language-server: $schema=https://opengpl.org/schema/v0.1/schema.json
-opengpl: '0.1'
-policy: my-agent-policy
-version: '1.0.0'
-```
-
-You will get auto-complete and inline validation errors as you type — no install needed.
-
-### CI Validation (Python)
-
-```bash
-pip install jsonschema pyyaml
-python3 -c "
-import yaml, jsonschema, urllib.request, json
-schema = json.loads(urllib.request.urlopen('https://opengpl.org/schema/v0.1/schema.json').read())
-jsonschema.validate(yaml.safe_load(open('my-policy.gpl')), schema)
-print('Policy valid')
-"
-```
-
-Replace `my-policy.gpl` with the path to your policy file.
-
----
-
-## Contributing
-
-OpenGPL is an open standard maintained by **OpenAstra** at [openastra.org](https://openastra.org).
-
-- 📖 Read the [full specification](./spec/SPEC.md)
-- 💬 Ask questions and propose ideas in [GitHub Discussions](https://github.com/sadayamuthu/opengpl/discussions)
-- 🐛 File [issues](https://github.com/sadayamuthu/opengpl/issues) for spec clarifications or bugs
-- 📝 Submit pull requests for examples, schema fixes, detectors, or doc improvements
-
-All specification changes require a **30-day public comment period**.
-See [CONTRIBUTING.md](./spec/CONTRIBUTING.md) for full governance details.
-
----
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the layout, the mapping rules and
+how to propose a spec change. Report security issues privately; see
+[SECURITY.md](SECURITY.md).
 
 ## License
 
-- **Specification** ([SPEC.md](./spec/SPEC.md)): [Creative Commons CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
-- **Reference code, schemas, examples**: [Apache License 2.0](https://opensource.org/licenses/Apache-2.0)
-
----
-
-<div align="center">
-
-**OpenGPL is an [OpenAstra](https://openastra.org) initiative**
-
-[opengpl](https://opengpl.org/opengpl) · [openastra](https://openastra.org)
-
-</div>
+Code, schemas and examples: [Apache License 2.0](LICENSE). The specification
+text ([SPEC.md](spec/SPEC.md)): [CC BY 4.0](spec/LICENSE-SPEC). OpenGPL is
+maintained by [OpenAstra](https://openastra.org).

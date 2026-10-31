@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: If you use OpenGPL, please cite it using these metadata.
+type: software
+title: "OpenGPL: Governance Policy Language"
+abstract: >-
+  A policy language for AI agents that produces compliance evidence. One
+  .gpl file says what an agent may take in, what it may produce, which tools
+  and networks it may use, and which compliance frameworks apply. The
+  reference SDK checks prompts and responses against the policy at runtime,
+  records every decision, and turns the policy and its decision log into
+  OSCAL, marking each NIST SP 800-53 control as enforced, heuristic or
+  declared.
+authors:
+  - family-names: Sadayamuthu
+    given-names: Karthikeyan
+    orcid: "https://orcid.org/0009-0008-3539-6048"
+    affiliation: Independent Researcher
+repository-code: "https://github.com/sadayamuthu/opengpl"
+url: "https://opengpl.org"
+license:
+  - Apache-2.0
+  - CC-BY-4.0
+keywords:
+  - LLM agents
+  - policy language
+  - AI governance
+  - compliance as code
+  - OSCAL
+  - NIST SP 800-53
+  - EU AI Act

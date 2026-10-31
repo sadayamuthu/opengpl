@@ -1,0 +1,15 @@
+# Lint and format settings for all Python in the repository
+# (sdk/, sidecar/, spec/scripts/). CI runs `ruff check` and `ruff format --check`.
+target-version = "py311"
+line-length = 100
+extend-exclude = ["sdk/tests/data"]
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = [
+  "E501",   # the formatter wraps code; long strings and YAML-like literals stay readable
+  "UP042",  # Status(str, Enum) is part of the public API; StrEnum changes str()
+]
+
+[lint.isort]
+known-first-party = ["opengpl"]

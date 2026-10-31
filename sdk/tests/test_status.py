@@ -1,4 +1,4 @@
-from opengpl.compliance.status import Status, weakest, value_status
+from opengpl.compliance.status import Status, value_status, weakest
 from opengpl.gates.output_gate import _BLOCK_PATTERNS
 
 

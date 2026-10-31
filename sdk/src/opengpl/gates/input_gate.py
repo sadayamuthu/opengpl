@@ -1,6 +1,6 @@
 # src/opengpl/gates/input_gate.py
+from opengpl.detectors import injection, jailbreak
 from opengpl.models import EvaluationResult
-from opengpl.detectors import injection, jailbreak, pii
 
 
 class InputGate:

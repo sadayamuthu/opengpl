@@ -1,9 +1,10 @@
 """Policy-field to control mapping. A control is reported only if a policy field implements it."""
+
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from functools import lru_cache
+from functools import cache
 from importlib.resources import files
 from typing import Any
 
@@ -56,7 +57,8 @@ _OPS = {"equals", "in", "any_of", "true", "false", "present"}
 def _validate_entries(filename: str, entries: list) -> None:
     """Fail fast on malformed mapping entries."""
     for i, e in enumerate(entries):
-        def bad(problem: str) -> ValueError:
+
+        def bad(problem: str, i: int = i) -> ValueError:
             return ValueError(f"{filename} entry {i}: {problem}")
 
         if not isinstance(e, dict):
@@ -73,14 +75,14 @@ def _validate_entries(filename: str, entries: list) -> None:
         ops = _norm_when(when)
         if len(ops) != 1:
             raise bad(f"'when' must have exactly one op, found {len(ops)}")
-        (op, arg), = ops.items()
+        ((op, arg),) = ops.items()
         if op not in _OPS:
             raise bad(f"unknown op {op!r}")
         if op in ("in", "any_of") and not isinstance(arg, list):
             raise bad(f"{op!r} requires a list argument")
 
 
-@lru_cache(maxsize=None)
+@cache
 def _load(filename: str) -> tuple[MappingEntry, ...]:
     text = (files("opengpl.compliance") / "mappings" / filename).read_text(encoding="utf-8")
     doc = yaml.safe_load(text)
@@ -127,7 +129,7 @@ def _evaluate(entry: MappingEntry, value: Any) -> tuple[Status, str] | None:
     """Return (status, rendered value) if the condition holds, else None."""
     if value is None:
         return None
-    (op, arg), = entry.when.items()
+    ((op, arg),) = entry.when.items()
     f = entry.field
     if op == "present":
         if value == [] or value == "" or value == {}:

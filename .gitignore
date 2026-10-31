@@ -1,12 +1,27 @@
+# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
+*.egg
 dist/
 build/
 .venv/
 .env
-*.egg
+
+# Test and coverage output
 .pytest_cache/
+.ruff_cache/
 .coverage
 htmlcov/
-docs/1
+
+# Local tooling
+.DS_Store
+.worktrees/
+.superpowers/
+
+# opengpl audit output written into the working tree by default
+*-component-definition.json
+*-assessment-results.json
+
+# demo build input
+demo/*.whl

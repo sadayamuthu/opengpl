@@ -3,14 +3,14 @@
 
 Standard library only. Pinned to TAG; change it deliberately and re-run.
 """
+
 import json
 import urllib.request
 from pathlib import Path
 
 TAG = "v1.6.0"
 PREFIX = (
-    f"https://raw.githubusercontent.com/usnistgov/oscal-content/{TAG}"
-    "/nist.gov/SP800-53/rev5/json/"
+    f"https://raw.githubusercontent.com/usnistgov/oscal-content/{TAG}/nist.gov/SP800-53/rev5/json/"
 )
 CATALOG = "NIST_SP-800-53_rev5_catalog.json"
 LEVELS = ("LOW", "MODERATE", "HIGH")
@@ -51,7 +51,10 @@ def main() -> None:
         "baselines": baselines,
     }
     OUT.write_text(json.dumps(data, indent=1) + "\n")
-    print(f"wrote {OUT}: {len(ids)} ids; " + ", ".join(f"{k}={len(v['controls'])}" for k, v in baselines.items()))
+    print(
+        f"wrote {OUT}: {len(ids)} ids; "
+        + ", ".join(f"{k}={len(v['controls'])}" for k, v in baselines.items())
+    )
 
 
 if __name__ == "__main__":

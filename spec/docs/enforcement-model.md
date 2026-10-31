@@ -19,7 +19,7 @@ OpenGPL enforcement follows the **Policy Decision Point / Policy Enforcement Poi
 
 ## Architecture
 
-```
+```text
   ┌─────────────────────────────────────────────────────────────┐
   │                  OpenGPL Runtime / Gateway                  │
   │                                                             │
@@ -69,17 +69,20 @@ OpenGPL enforcement follows the **Policy Decision Point / Policy Enforcement Poi
 When a request is received, controls are applied in strict sequence:
 
 ### Step 1 — Policy Resolution
+
 - Identify which policy applies based on `applies_to` (model, agent, context, environment)
 - If `extends` is set, merge child policy over parent
 - Validate policy status (`ACTIVE` only — `DRAFT`/`DEPRECATED` policies are not enforced)
 - Check `effective_from` and `effective_until` date bounds
 
 ### Step 2 — Trust Level Assignment
+
 - Determine trust level from `model_controls.trust_level`
 - If an identity provider is integrated, trust level may be elevated based on verified identity
 - Trust level affects default permissiveness of subsequent evaluations
 
 ### Step 3 — Input Gate (input_controls)
+
 - Run threat detection (`detect` categories)
 - Apply data sanitization (`sanitize` categories)
 - Enforce token limits (`max_context_tokens`, `max_prompt_tokens`)
@@ -87,17 +90,20 @@ When a request is received, controls are applied in strict sequence:
 - Apply language filter if `language_filter` is set
 
 ### Step 4 — Model Controls Validation (pre-dispatch)
+
 - Validate that the requested model is in `applies_to.models`
 - Apply `temperature_ceiling` to the request parameters
 - Gate tool declarations against `allow_tools` / `deny_tools`
 
 ### Step 5 — Tool Call Evaluation (per-call, during execution)
+
 - Each tool invocation is evaluated independently
 - Tool name is matched against `allow_tools` and `deny_tools`
 - `require_human_in_loop` conditions are evaluated for each tool call context
 - `max_tool_calls` counter is incremented and checked
 
 ### Step 6 — Output Gate (output_controls)
+
 - Scan generated response for blocked data categories (`block`)
 - Apply redaction for `redact` categories
 - Check for `deny_topics` in response content
@@ -108,11 +114,13 @@ When a request is received, controls are applied in strict sequence:
 - Check for `deny_formats`
 
 ### Step 7 — Audit Record Generation
+
 - Write evaluation record at configured `log_level`
 - Generate OSCAL artifacts if `evidence_export: true`
 - Dispatch alerts via `alert_channels` if violations occurred
 
 ### Step 8 — Violation Action Execution
+
 - Apply `on_violation` or `on_detection` action as appropriate
 - If engine unavailable, apply `fallback` action
 
@@ -139,7 +147,9 @@ When a request is received, controls are applied in strict sequence:
 When multiple policies could apply to the same request:
 
 ### 1. Specificity wins
+
 A policy with more specific `applies_to` criteria takes precedence over a less specific one. Order of specificity (most to least):
+
 - `agent` + `context` + `environment`
 - `agent` + `context`
 - `agent` only
@@ -148,10 +158,13 @@ A policy with more specific `applies_to` criteria takes precedence over a less s
 - Wildcard (`models: ['*']`)
 
 ### 2. Inheritance
+
 Child policies (via `extends`) override parent fields. The child is evaluated after the parent, and any field defined in the child replaces the parent's value entirely for that field.
 
 ### 3. Stricter wins (sibling conflict)
+
 When two policies of equal specificity both apply, the stricter control is used:
+
 - Lower `hallucination_threshold` wins
 - `BLOCK` beats `LOG` beats `ALLOW`
 - `DENY` beats everything, always
@@ -159,6 +172,7 @@ When two policies of equal specificity both apply, the stricter control is used:
 - `false` beats `true` for `allow_*` fields
 
 ### 4. DENY is absolute
+
 If any applicable policy evaluates to `DENY`, the request is denied regardless of what any other policy says.
 
 ---
@@ -182,6 +196,7 @@ enforcement:
 The `hallucination_threshold` field is a novel OpenGPL primitive with no equivalent in prior policy languages.
 
 A runtime that supports this field computes a hallucination risk score (0.0–1.0) for each response, for example from a combination of the following. (The reference SDK does not enforce this field yet.)
+
 - Factual consistency checks against retrieved context
 - Confidence calibration signals from the model
 - Self-consistency sampling across multiple passes

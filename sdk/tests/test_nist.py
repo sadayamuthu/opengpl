@@ -1,4 +1,4 @@
-from opengpl.compliance.nist import catalog_ids, baseline, FRAMEWORK_TO_BASELINE
+from opengpl.compliance.nist import FRAMEWORK_TO_BASELINE, baseline, catalog_ids
 
 
 def test_catalog_contains_controls_and_enhancements():

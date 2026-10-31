@@ -1,7 +1,7 @@
 # tests/test_loader.py
 import pytest
-from opengpl.loader import load, validate_schema
-from opengpl.models import EvaluationResult
+
+from opengpl.loader import load
 
 MINIMAL_POLICY = """
 opengpl: '0.1'
@@ -22,6 +22,7 @@ enforcement:
   fallback: DENY
 """
 
+
 def test_load_valid_policy(tmp_path):
     f = tmp_path / "policy.gpl"
     f.write_text(MINIMAL_POLICY)
@@ -29,9 +30,11 @@ def test_load_valid_policy(tmp_path):
     assert policy["policy"] == "test-policy"
     assert policy["opengpl"] == "0.1"
 
+
 def test_load_missing_file():
     with pytest.raises(FileNotFoundError):
         load("/nonexistent/policy.gpl")
+
 
 def test_load_invalid_schema(tmp_path):
     f = tmp_path / "bad.gpl"
@@ -40,11 +43,16 @@ def test_load_invalid_schema(tmp_path):
         load(str(f))
 
 
-_TWO = MINIMAL_POLICY.replace("policy: test-policy", "policy: alpha") + "---\n" + MINIMAL_POLICY.replace("policy: test-policy", "policy: beta")
+_TWO = (
+    MINIMAL_POLICY.replace("policy: test-policy", "policy: alpha")
+    + "---\n"
+    + MINIMAL_POLICY.replace("policy: test-policy", "policy: beta")
+)
 
 
 def test_load_all_multi_document(tmp_path):
     from opengpl.loader import load_all
+
     f = tmp_path / "multi.gpl"
     f.write_text(_TWO)
     assert [d["policy"] for d in load_all(str(f))] == ["alpha", "beta"]

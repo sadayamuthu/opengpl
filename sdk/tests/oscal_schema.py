@@ -1,9 +1,10 @@
 """Validate OSCAL documents against the vendored OSCAL 1.2.3 JSON schemas."""
+
 from __future__ import annotations
 
 import json
 import pathlib
-from functools import lru_cache
+from functools import cache
 from typing import Literal
 
 from jsonschema import Draft7Validator
@@ -15,7 +16,7 @@ _FILES = {
 }
 
 
-@lru_cache(maxsize=None)
+@cache
 def _validator(model: str) -> Draft7Validator:
     text = (_DIR / _FILES[model]).read_text(encoding="utf-8")
     # Python's `re` cannot compile \p{..}; substitute equivalents.

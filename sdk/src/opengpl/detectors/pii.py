@@ -10,6 +10,7 @@ Two backends:
   common US-format identifiers (SSN, email, phone, credit card, IPv4). It is
   a heuristic, not a substitute for a dedicated PII service.
 """
+
 import bisect
 import re
 from typing import NamedTuple
@@ -28,8 +29,12 @@ _REGEX_PATTERNS = [
     ("US_SSN", re.compile(r"\b\d{3}-\d{2}-\d{4}\b")),
     # Bounded, and anchored by a lookbehind instead of \b, so a long run of
     # local-part characters with no "@" is scanned once, not once per offset.
-    ("EMAIL_ADDRESS", re.compile(
-        r"(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}\b")),
+    (
+        "EMAIL_ADDRESS",
+        re.compile(
+            r"(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}\b"
+        ),
+    ),
     ("CREDIT_CARD", re.compile(r"\b(?:\d[ -]?){13,16}\b")),
     ("PHONE_NUMBER", re.compile(r"(?:\+?1[ .-]?)?\(?\b\d{3}\)?[ .-]?\d{3}[ .-]?\d{4}\b")),
     ("IP_ADDRESS", re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")),
@@ -89,7 +94,7 @@ def sanitize_pii(text: str) -> str:
     for r in results:
         if r.end > last_start:
             continue  # skip overlapping spans
-        pieces.append(text[r.end:last_start])
+        pieces.append(text[r.end : last_start])
         pieces.append(f"[REDACTED-{r.entity_type}]")
         last_start = r.start
     pieces.append(text[:last_start])

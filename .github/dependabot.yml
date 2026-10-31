@@ -1,0 +1,33 @@
+# Weekly update pull requests for Python packages, workflow actions and the
+# sidecar base image. Each ecosystem's updates arrive grouped in one pull request.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /sdk
+    schedule:
+      interval: weekly
+    groups:
+      python:
+        patterns: ['*']
+    commit-message:
+      prefix: deps
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: ci
+
+  - package-ecosystem: docker
+    directories: [/sidecar, /demo]
+    schedule:
+      interval: weekly
+    groups:
+      docker:
+        patterns: ['*']
+    commit-message:
+      prefix: deps

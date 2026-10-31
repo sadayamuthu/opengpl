@@ -1,11 +1,13 @@
 # src/opengpl/cli.py
 import sys
+
 import click
+
 from opengpl import loader
 
 
 @click.group()
-@click.version_option()
+@click.version_option(package_name="opengpl-sdk")
 def main():
     """OpenGPL — policy enforcement for generative AI."""
     pass
@@ -36,13 +38,22 @@ def eval(policy_file: str, prompt: str, context: str | None):
     """Evaluate a prompt against a policy (dry-run)."""
     try:
         from opengpl.engine import PolicyEngine
+
         engine = PolicyEngine(policy_file)
 
         input_result = engine.check_input(prompt, context)
         output_result = engine.check_output("[simulated output]")
 
-        input_status = click.style("PASS", fg="green") if input_result.passed else click.style("BLOCK", fg="red")
-        output_status = click.style("PASS", fg="green") if output_result.passed else click.style("BLOCK", fg="red")
+        input_status = (
+            click.style("PASS", fg="green")
+            if input_result.passed
+            else click.style("BLOCK", fg="red")
+        )
+        output_status = (
+            click.style("PASS", fg="green")
+            if output_result.passed
+            else click.style("BLOCK", fg="red")
+        )
 
         click.echo(f"INPUT GATE:  {input_status}")
         if not input_result.passed:
@@ -58,14 +69,29 @@ def eval(policy_file: str, prompt: str, context: str | None):
 @main.command()
 @click.argument("policy_file")
 @click.option("--framework", required=True, help="Compliance framework (e.g. FedRAMP-Moderate)")
-@click.option("--output", default=None,
-              help="Component definition path (default: <policy>-component-definition.json)")
-@click.option("--decisions", default=None, type=click.Path(),
-              help="Decision log (JSONL) to turn into OSCAL assessment results")
-@click.option("--results-output", default=None,
-              help="Assessment results path (default: <policy>-assessment-results.json)")
-def audit(policy_file: str, framework: str, output: str | None,
-          decisions: str | None, results_output: str | None):
+@click.option(
+    "--output",
+    default=None,
+    help="Component definition path (default: <policy>-component-definition.json)",
+)
+@click.option(
+    "--decisions",
+    default=None,
+    type=click.Path(),
+    help="Decision log (JSONL) to turn into OSCAL assessment results",
+)
+@click.option(
+    "--results-output",
+    default=None,
+    help="Assessment results path (default: <policy>-assessment-results.json)",
+)
+def audit(
+    policy_file: str,
+    framework: str,
+    output: str | None,
+    decisions: str | None,
+    results_output: str | None,
+):
     """Generate OSCAL compliance artifacts for a policy."""
     import json
 
@@ -104,20 +130,32 @@ def audit(policy_file: str, framework: str, output: str | None,
             res_path = results_output or f"{name}-assessment-results.json"
             write(res_path, ar)
             n = len(ar["assessment-results"]["results"][0].get("observations", []))
-            click.echo(click.style(
-                f"✓ Assessment results written to {res_path} "
-                f"({n} observation{'' if n == 1 else 's'})", fg="green"))
-        elif not cd.get("component-definition", {}).get("components", [{}])[0].get(
-                "control-implementations"):
+            click.echo(
+                click.style(
+                    f"✓ Assessment results written to {res_path} "
+                    f"({n} observation{'' if n == 1 else 's'})",
+                    fg="green",
+                )
+            )
+        elif (
+            not cd.get("component-definition", {})
+            .get("components", [{}])[0]
+            .get("control-implementations")
+        ):
             click.echo(f"  Note: no mapped controls in the NIST SP 800-53 Rev 5 {level} baseline.")
     except UnsupportedFramework:
-        fail(f"{framework} has no official OSCAL baseline; "
-             "see spec/docs/compliance-mapping.md for its mapping.", 2)
+        fail(
+            f"{framework} has no official OSCAL baseline; "
+            "see spec/docs/compliance-mapping.md for its mapping.",
+            2,
+        )
     except FrameworkNotDeclared:
         fail(f"Policy does not list {framework} in audit.compliance.", 2)
     except NothingToReport:
-        fail(f"No mapped controls in the NIST SP 800-53 Rev 5 {level} baseline; "
-             "nothing to report.", 2)
+        fail(
+            f"No mapped controls in the NIST SP 800-53 Rev 5 {level} baseline; nothing to report.",
+            2,
+        )
     except (FileNotFoundError, ValueError) as e:
         fail(str(e), 1)
     except OSError as e:  # IsADirectoryError, PermissionError, ...

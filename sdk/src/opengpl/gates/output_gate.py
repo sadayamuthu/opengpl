@@ -1,5 +1,6 @@
 # src/opengpl/gates/output_gate.py
 import re
+
 from opengpl.models import EvaluationResult
 
 # Simple keyword patterns for blocked data types

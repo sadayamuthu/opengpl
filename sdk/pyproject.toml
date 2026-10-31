@@ -4,11 +4,29 @@ build-backend = "hatchling.build"
 
 [project]
 name = "opengpl-sdk"
-version = "0.2.0"
+version = "0.2.1"
 description = "The SDK for OpenGPL policy files — enforcement, authoring, and testing"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "Apache-2.0"}
+authors = [{name = "Karthikeyan Sadayamuthu"}]
+keywords = [
+    "ai-governance", "policy-as-code", "llm-security", "ai-agents",
+    "oscal", "compliance", "nist-800-53", "prompt-injection",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries",
+]
 dependencies = [
     "pyyaml>=6.0",
     "jsonschema>=4.20",
@@ -21,7 +39,14 @@ dependencies = [
 # NLP-based PII detection. After installing, run:
 #   python -m spacy download en_core_web_lg
 pii = ["presidio-analyzer>=2.2", "spacy>=3.7"]
-dev = ["pytest>=8.0", "pytest-cov", "httpx"]
+dev = ["pytest>=8.0", "pytest-cov", "httpx", "ruff>=0.15"]
+
+[project.urls]
+Homepage = "https://opengpl.org"
+Repository = "https://github.com/sadayamuthu/opengpl"
+Documentation = "https://github.com/sadayamuthu/opengpl/blob/main/USAGE.md"
+Changelog = "https://github.com/sadayamuthu/opengpl/releases"
+Issues = "https://github.com/sadayamuthu/opengpl/issues"
 
 [project.scripts]
 opengpl = "opengpl.cli:main"

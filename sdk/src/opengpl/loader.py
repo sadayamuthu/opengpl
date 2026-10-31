@@ -1,8 +1,9 @@
 # src/opengpl/loader.py
 import json
 import pathlib
-import yaml
+
 import jsonschema
+import yaml
 
 _SCHEMA_DIR = pathlib.Path(__file__).parent / "schemas"
 
@@ -12,6 +13,7 @@ def _get_schema(version: str) -> dict:
     if schema_path.exists():
         return json.loads(schema_path.read_text())
     import urllib.request
+
     url = f"https://opengpl.org/schema/v{version}/schema.json"
     return json.loads(urllib.request.urlopen(url).read())
 
