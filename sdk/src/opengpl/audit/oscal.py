@@ -1,30 +1,5 @@
 # src/opengpl/audit/oscal.py
-"""
-Basic OSCAL stub for open source runtime.
-Full OSCAL assembly (component definitions, assessment results, POA&M)
-is a ControlGate commercial feature.
-"""
-
-def generate_oscal_stub(policy_name: str, framework: str) -> dict:
-    """
-    Returns a minimal OSCAL System Security Plan stub.
-    Full OSCAL artifact assembly requires ControlGate.
-    """
-    return {
-        "oscal-version": "1.0.4",
-        "metadata": {
-            "title": policy_name,
-            "framework": framework,
-            "NOTE": (
-                "This is a basic stub. Full OSCAL assembly with component "
-                "definitions, assessment results, and POA&M requires ControlGate. "
-                "See https://openastra.ai/controlgate"
-            ),
-        },
-    }
-
-
-# --- OSCAL 1.2.3 component definition ---------------------------------------
+"""OSCAL 1.2.3 output: component definitions and assessment results."""
 import uuid
 from datetime import datetime, timezone
 
@@ -32,6 +7,7 @@ from opengpl.audit.ledger import _now
 from opengpl.compliance.mapping import applicable_controls
 from opengpl.compliance.nist import FRAMEWORK_TO_BASELINE, baseline
 
+# --- OSCAL 1.2.3 component definition ---------------------------------------
 OSCAL_VERSION = "1.2.3"
 NS = "https://opengpl.org/ns/oscal"
 UUID_NS = uuid.uuid5(uuid.NAMESPACE_URL, NS)
