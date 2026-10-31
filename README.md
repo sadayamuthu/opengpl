@@ -19,6 +19,8 @@ It is honest about what it enforces. Every control in the output is marked
 `enforced`, `heuristic` or `declared`, and the output never claims a control
 is met. That judgement stays with the assessor.
 
+![A support-agent policy is validated; the app blocks a prompt injection and a card number in a reply and logs each decision; opengpl audit turns the policy and log into OSCAL, with each control marked enforced, heuristic or declared](demo/demo.gif)
+
 <sub>Not related to the GNU General Public License: GPL here stands for
 Governance Policy Language.</sub>
 

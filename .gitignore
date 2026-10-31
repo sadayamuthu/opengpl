@@ -22,3 +22,6 @@ htmlcov/
 # opengpl audit output written into the working tree by default
 *-component-definition.json
 *-assessment-results.json
+
+# demo build input
+demo/*.whl
