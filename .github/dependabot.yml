@@ -23,7 +23,7 @@ updates:
       prefix: ci
 
   - package-ecosystem: docker
-    directory: /sidecar
+    directories: [/sidecar, /demo]
     schedule:
       interval: weekly
     groups:
