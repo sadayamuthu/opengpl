@@ -33,3 +33,13 @@ def weakest(statuses: Iterable[Status]) -> Status:
 def value_status(field: str, value: str | None = None) -> Status:
     """Look up (field, value), then (field, None), then DECLARED."""
     return _REGISTRY.get((field, value)) or _REGISTRY.get((field, None), Status.DECLARED)
+
+
+def value_statuses(field: str) -> dict[str, Status]:
+    """Value-specific registry entries for a field, in registry order (field-level entry excluded)."""
+    return {v: s for (f, v), s in _REGISTRY.items() if f == field and v is not None}
+
+
+def stronger(a: Status, b: Status) -> bool:
+    """True if a is stronger than b."""
+    return _ORDER[a] > _ORDER[b]

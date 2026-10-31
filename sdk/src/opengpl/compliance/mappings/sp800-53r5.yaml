@@ -62,4 +62,4 @@ entries:
     field: output_controls.block
     when: {present: true}
     statement: "output_controls.block is set ({value}); the policy declares output patterns that are blocked."
-    rationale: "SI-15 information output filtering: validates model output against expected content by blocking listed categories."
+    rationale: "SI-15 information output filtering: for categories the runtime recognises, model output is checked and responses containing them are blocked (the reference SDK recognises SSN, PHI, credit_card and credentials by pattern; other categories are declarations)."

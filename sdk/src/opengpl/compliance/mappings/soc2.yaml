@@ -28,7 +28,7 @@ entries:
     field: output_controls.block
     when: {present: true}
     statement: "output_controls.block is set ({value}); the policy declares data categories that are blocked from responses."
-    rationale: "CC6.7 point of focus 'Restricts the Ability to Perform Transmission' (data loss prevention): responses containing the listed categories are blocked before delivery. Pattern-based, so heuristic at best."
+    rationale: "CC6.7 point of focus 'Restricts the Ability to Perform Transmission' (data loss prevention): for categories the runtime recognises, responses containing them are blocked before delivery (the reference SDK recognises SSN, PHI, credit_card and credentials by pattern; other categories are declarations)."
   - control: CC7.2
     field: input_controls.detect
     when: {any_of: [prompt_injection, jailbreak, context_stuffing, role_confusion, data_exfiltration, adversarial_elicitation]}

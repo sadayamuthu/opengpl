@@ -15,7 +15,7 @@ import re
 import sys
 
 from opengpl.compliance.mapping import FRAMEWORK_FILES, MappingEntry, load_mappings
-from opengpl.compliance.status import value_status, weakest
+from opengpl.compliance.status import Status, stronger, value_status, value_statuses, weakest
 
 DOC = pathlib.Path(__file__).resolve().parents[1] / "docs" / "compliance-mapping.md"
 
@@ -53,12 +53,23 @@ def _condition(entry: MappingEntry) -> str:
 
 
 def _status(entry: MappingEntry) -> str:
+    """Weakest status the row can carry, then any stronger statuses and the values that earn them."""
     (op, arg), = entry.when.items()
-    if op in ("in", "any_of"):
-        return weakest(value_status(entry.field, str(v)) for v in arg).value
+    f = entry.field
     if op == "equals":
-        return value_status(entry.field, str(arg)).value
-    return value_status(entry.field).value
+        return value_status(f, str(arg)).value
+    if op in ("in", "any_of"):
+        candidates = {str(v): value_status(f, str(v)) for v in arg}
+        base = weakest(candidates.values())
+    else:
+        base = value_status(f)
+        candidates = value_statuses(f)
+    parts = [base.value]
+    for level in (Status.HEURISTIC, Status.ENFORCED):
+        vals = [v for v, st in candidates.items() if st is level and stronger(st, base)]
+        if vals:
+            parts.append(f"{level.value} for " + ", ".join(f"`{v}`" for v in vals))
+    return "; ".join(parts)
 
 
 def render_table(framework: str) -> str:
