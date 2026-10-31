@@ -114,7 +114,7 @@ Policy files must be mounted into this directory. The sidecar resolves all polic
 
 ### Decision log
 
-With `OPENGPL_DECISION_LOG` set, each `/input/check` and `/output/check` call appends one JSON line: the policy, the gate, the action, the rule IDs evaluated and fired, and a SHA-256 of the checked text. When the policy's `audit.log_level` is `FULL` or `DEBUG`, the record also holds the text, redacted for PII, SSN, card numbers and credentials unless the policy sets `audit.pii_in_logs: true`. If redaction fails, the record is written without the text and with `"text_redaction": "failed"`. A policy with `audit.log_level: OFF` produces no records. Without `OPENGPL_DECISION_LOG`, no text is redacted or retained. Mount a volume for the file if it must outlive the container. Feed it to `opengpl audit --decisions` to produce OSCAL assessment results (see the [SDK README](../sdk/README.md#audit)).
+With `OPENGPL_DECISION_LOG` set, each `/input/check` and `/output/check` call appends one JSON line: the policy, the gate, the action, the rule IDs evaluated and fired, and a SHA-256 of the checked text. When the policy's `audit.log_level` is `FULL` or `DEBUG`, the record also holds the text, redacted for PII, SSN, card numbers and common credential shapes (best-effort) unless the policy sets `audit.pii_in_logs: true`. If redaction fails, the record is written without the text and with `"text_redaction": "failed"`. A policy with `audit.log_level: OFF` produces no records. Without `OPENGPL_DECISION_LOG`, no text is redacted or retained. Mount a volume for the file if it must outlive the container. Feed it to `opengpl audit --decisions` to produce OSCAL assessment results (see the [SDK README](../sdk/README.md#audit)).
 
 ---
 

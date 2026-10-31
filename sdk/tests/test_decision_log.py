@@ -158,3 +158,94 @@ def test_log_level_off_records_nothing(tmp_path):
     log = DecisionLog(f)
     assert log.record(policy=P(log_level="OFF"), gate="input", result=R, text="hi") is None
     assert log.records == [] and read_decisions(f) == []
+
+
+_PEM = ("-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAs3cr3tK3yB0dy\nQWxhZGRpbjpvcGVu\n"
+        "-----END RSA PRIVATE KEY-----")
+_JWT = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
+
+
+@pytest.mark.parametrize("text,secret", [
+    ('{"password": "hunter 2 x"}', "2 x"),
+    ('password = "hunter 2 x"', "2 x"),
+    ('password: "hunter 2 x', "2 x"),  # unterminated quote
+    ("pwd=Tr0ub4dor", "Tr0ub4dor"),
+    ("passphrase: correct-horse", "correct-horse"),
+    ('{"private_key": "abcdef123"}', "abcdef123"),
+    ("key file:\n" + _PEM + "\nend", "s3cr3tK3yB0dy"),
+    ("-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjE truncated", "b3BlbnNzaC1rZXktdjE"),
+    ("jwt " + _JWT + " ok", "dozjgNryP4J3jVmNHl0w5N"),
+    ("db at postgres://admin:hunter2@db.example.com:5432/app", "hunter2"),
+    ("db at postgres://admin:hunter2@db.example.com:5432/app", "admin"),
+    ("Authorization: Basic YWxhZGRpbjpvcGVuc2VzYW1l", "YWxhZGRpbjpvcGVuc2VzYW1l"),
+    ("key sk-proj-abcdefghijklmnop1234 used", "abcdefghijklmnop1234"),
+    ("key sk-abcdefghijklmnopqrstuvwx used", "abcdefghijklmnopqrstuvwx"),
+    ("aws AKIAIOSFODNN7EXAMPLE id", "AKIAIOSFODNN7EXAMPLE"),
+    ("gh ghp_abcdefghijklmnopqrstuvwxyz0123456789 x", "abcdefghijklmnopqrstuvwxyz0123456789"),
+    ("gh github_pat_11ABCDEFG0123456789_abcdefghijklmnop x", "11ABCDEFG0123456789_abcdefghijklmnop"),
+    ("slack xoxb-1234567890-abcdefghij x", "1234567890-abcdefghij"),
+])
+def test_redact_more_credential_shapes(text, secret):
+    from opengpl.audit.ledger import redact_for_log
+    out = redact_for_log(text)
+    assert secret not in out and "[REDACTED-CREDENTIAL]" in out
+
+
+def test_redact_url_userinfo_keeps_scheme_and_host(monkeypatch):
+    import opengpl.detectors.pii as pii
+    from opengpl.audit.ledger import redact_for_log
+    out = redact_for_log("see https://bob:pa55@git.example.org/repo")
+    assert "bob" not in out and "pa55" not in out
+    assert "https://[REDACTED-CREDENTIAL]@" in out  # Presidio may then redact the host as a URL
+    monkeypatch.setattr(pii, "_ANALYZER", False)
+    out = redact_for_log("see https://bob:pa55@git.example.org/repo")
+    assert out == "see https://[REDACTED-CREDENTIAL]@git.example.org/repo"
+
+
+def test_redact_keeps_placeholders_and_prose_with_new_shapes():
+    from opengpl.audit.ledger import redact_for_log
+    out = redact_for_log("SSN 123-45-6789 jwt " + _JWT + " task-abcdefghijklmnopqrstu basic understanding")
+    assert "[REDACTED-US_SSN]" in out and "[REDACTED-CREDENTIAL]" in out
+    assert "task-abcdefghijklmnopqrstu basic understanding" in out
+    assert redact_for_log("the token was valid") == "the token was valid"
+
+
+_ADVERSARIAL_LOG = {
+    "pem-begin": "-----BEGIN PRIVATE KEY-----" * 20000,
+    "pem-body": "-----BEGIN PRIVATE KEY-----" + "A" * 300000,
+    "pem-header": "-----BEGIN " + "A " * 50000,
+    "jwt-eyJ": "eyJ" * 50000,
+    "jwt-long": " eyJ" + "a" * 300000,
+    "jwt-dots": ("eyJ" + "a" * 10 + ".") * 20000,
+    "url-scheme": "a://" * 50000,
+    "url-userinfo": "a://x:" * 30000,
+    "url-colons": "a://" + "x:" * 100000,
+    "basic": "Authorization: Basic " * 20000,
+    "basic-long": "authorization: basic " + "A" * 300000,
+    "bearer": "bearer " * 30000,
+    "sk": "sk-" * 50000,
+    "ghp": "ghp_" * 50000,
+    "github_pat": "github_pat_" * 30000,
+    "xoxb": "xoxb-" * 50000,
+    "akia": "AKIA" * 50000,
+    "password": "password" * 20000,
+    "pwd=": "pwd=" * 50000,
+    "quote-open": 'password: "' * 20000,
+    "quote-long": 'password: "' + "x" * 300000,
+    "private_key": "private_key" * 20000,
+    "passphrase": "passphrase" * 20000,
+    "secret-": "secret-" * 30000,
+    "1-": "1-" * 50000,
+    "1.": "1." * 50000,
+}
+
+
+@pytest.mark.parametrize("name", sorted(_ADVERSARIAL_LOG))
+def test_redact_regex_backend_is_linear_time(monkeypatch, name):
+    import time
+    import opengpl.detectors.pii as pii
+    from opengpl.audit.ledger import redact_for_log
+    monkeypatch.setattr(pii, "_ANALYZER", False)
+    t = time.perf_counter()
+    redact_for_log(_ADVERSARIAL_LOG[name])
+    assert time.perf_counter() - t < 1

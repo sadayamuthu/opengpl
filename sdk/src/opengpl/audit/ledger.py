@@ -22,23 +22,48 @@ DECISION_SCHEMA = "opengpl.decision/1"
 _REDACTIONS = (
     ("SSN", "[REDACTED-US_SSN]"),
     ("credit_card", "[REDACTED-CREDIT_CARD]"),
-    ("credentials", "[REDACTED-CREDENTIAL]"),
 )
 
 
-# Log-only credential shapes the gate regex misses (JSON keys, *_token, Bearer).
+# Log-only credential shapes the gate regex misses: best-effort, common shapes
+# only. Every quantifier is bounded and every unanchored token prefix has a
+# lookbehind, so each pattern runs in linear time on adversarial input.
+_CRED = "[REDACTED-CREDENTIAL]"
 _LOG_CREDENTIAL_PATTERNS = (
-    r"(?i)\b[\w-]{0,40}?(?:api[_\s-]?key|password|passwd|secret|token)[\w-]{0,40}\"?\s*[:=]\s*\"?[^\s\",}]+",
-    r"(?i)\bbearer\s+[^\s\",}]+",
+    # PEM private key blocks; the body stops at the next "-----", so an
+    # unterminated block is still redacted up to that point.
+    (r"-----BEGIN [A-Z ]{0,40}PRIVATE KEY-----(?:[^-]|-(?!----)){0,16384}"
+     r"(?:-----END [A-Z ]{0,40}PRIVATE KEY-----)?", _CRED),
+    # JSON Web Tokens.
+    (r"(?<![\w-])eyJ[\w-]{5,4096}\.[\w-]{5,4096}\.[\w-]{0,4096}", _CRED),
+    # URL userinfo: keep the scheme and the host.
+    (r"(?i)\b([a-z][a-z0-9+.-]{0,31}://)[^\s/@:]{1,256}:[^\s/@]{1,256}@", r"\1" + _CRED + "@"),
+    # HTTP Basic and Bearer credentials: keep the header name.
+    (r"(?i)\b(authorization\s{0,16}:\s{0,16})basic\s{1,16}[A-Za-z0-9+/]{1,4096}={0,2}", r"\1" + _CRED),
+    (r"(?i)\bbearer\s{1,16}[^\s\",}]{1,4096}", _CRED),
+    # Vendor token prefixes.
+    (r"(?<![\w-])sk-[A-Za-z0-9_-]{16,256}", _CRED),
+    (r"\bAKIA[0-9A-Z]{16}\b", _CRED),
+    (r"(?<![\w-])gh[pousr]_[A-Za-z0-9]{20,255}", _CRED),
+    (r"(?<![\w-])github_pat_[A-Za-z0-9_]{20,255}", _CRED),
+    (r"(?<![\w-])xox[abp]-[A-Za-z0-9-]{10,255}", _CRED),
+    # key: value / key=value / "key": "value". A quoted value is taken whole
+    # (up to 4096 characters, or to the end of that run if the quote is never
+    # closed), so no tail of a multi-word secret is left behind.
+    (r"(?i)(?:api[_\s-]?key|password|passwd|passphrase|pwd|private[_-]?key|secret|token)"
+     r"[\w-]{0,40}\"?\s{0,16}[:=]\s{0,16}(?:\"[^\"]{0,4096}\"?|[^\s\",}]{1,4096})", _CRED),
 )
 
 
 def redact_for_log(text: str) -> str:
+    # Credentials first: the PII pass would otherwise split shapes such as
+    # URL userinfo (user:pass@host looks like an e-mail address).
+    for pat, repl in _LOG_CREDENTIAL_PATTERNS:
+        text = re.sub(pat, repl, text)
+    text = re.sub(_BLOCK_PATTERNS["credentials"], _CRED, text, flags=re.IGNORECASE)
     text = sanitize_pii(text)
     for key, token in _REDACTIONS:
         text = re.sub(_BLOCK_PATTERNS[key], token, text, flags=re.IGNORECASE)
-    for pat in _LOG_CREDENTIAL_PATTERNS:
-        text = re.sub(pat, "[REDACTED-CREDENTIAL]", text)
     return text
 
 

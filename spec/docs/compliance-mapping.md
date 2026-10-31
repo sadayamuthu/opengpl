@@ -287,7 +287,7 @@ Controls are checked against the SP 800-53 Rev 5 Low, Moderate and High baseline
 
 ### Decision log
 
-The assessment results come from the JSONL decision log (`PolicyEngine(path, decision_log=...)`, or `OPENGPL_DECISION_LOG` for the sidecar). A record stores the rule IDs evaluated and fired, not controls; controls are derived at audit time, so one log can be audited against different frameworks. Under `audit.log_level` FULL or DEBUG, the record holds the text, redacted unless `audit.pii_in_logs` is `true`; if redaction fails, the text is omitted and the record carries `"text_redaction": "failed"`. Otherwise only a SHA-256 of the text is stored. Under `audit.log_level` OFF, no record is written.
+The assessment results come from the JSONL decision log (`PolicyEngine(path, decision_log=...)`, or `OPENGPL_DECISION_LOG` for the sidecar). A record stores the rule IDs evaluated and fired, not controls; controls are derived at audit time, so one log can be audited against different frameworks. Under `audit.log_level` FULL or DEBUG, the record holds the text, redacted for PII and common credential shapes (best-effort) unless `audit.pii_in_logs` is `true`; if redaction fails, the text is omitted and the record carries `"text_redaction": "failed"`. Otherwise only a SHA-256 of the text is stored. Under `audit.log_level` OFF, no record is written.
 
 ### Component Definition Example
 

@@ -209,8 +209,10 @@ It stores rule IDs, not controls: controls are derived when you run
 `opengpl audit`, so one log can be audited against different frameworks.
 
 When `audit.log_level` is `FULL` or `DEBUG`, the record also holds the text.
-That text is redacted (PII via `sanitize_pii`, plus SSN, card-number and
-credential patterns) unless the policy sets `audit.pii_in_logs: true`. At other
+That text is redacted (PII via `sanitize_pii`, plus SSN and card-number
+patterns and common credential shapes such as key-value secrets, bearer and
+basic auth, URL userinfo, JWTs, PEM private keys and well-known token prefixes;
+best-effort, not exhaustive) unless the policy sets `audit.pii_in_logs: true`. At other
 levels only the hash is stored. If redaction itself fails (for example,
 Presidio rejects text over 1,000,000 characters), the record is still written
 without the text and with `"text_redaction": "failed"`; raw text is never
