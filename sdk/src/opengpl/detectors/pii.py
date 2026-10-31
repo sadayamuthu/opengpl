@@ -10,6 +10,7 @@ Two backends:
   common US-format identifiers (SSN, email, phone, credit card, IPv4). It is
   a heuristic, not a substitute for a dedicated PII service.
 """
+import bisect
 import re
 from typing import NamedTuple
 
@@ -25,7 +26,10 @@ class PIIResult(NamedTuple):
 
 _REGEX_PATTERNS = [
     ("US_SSN", re.compile(r"\b\d{3}-\d{2}-\d{4}\b")),
-    ("EMAIL_ADDRESS", re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")),
+    # Bounded, and anchored by a lookbehind instead of \b, so a long run of
+    # local-part characters with no "@" is scanned once, not once per offset.
+    ("EMAIL_ADDRESS", re.compile(
+        r"(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}\b")),
     ("CREDIT_CARD", re.compile(r"\b(?:\d[ -]?){13,16}\b")),
     ("PHONE_NUMBER", re.compile(r"(?:\+?1[ .-]?)?\(?\b\d{3}\)?[ .-]?\d{3}[ .-]?\d{4}\b")),
     ("IP_ADDRESS", re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")),
@@ -52,13 +56,18 @@ def backend() -> str:
 
 def _detect_regex(text: str) -> list[PIIResult]:
     found: list[PIIResult] = []
-    taken: list[tuple[int, int]] = []
+    # Accepted spans never overlap, so keep them sorted and check only the
+    # neighbours (a linear scan per match is quadratic on match-dense input).
+    starts: list[int] = []
+    ends: list[int] = []
     for entity, pattern in _REGEX_PATTERNS:
         for m in pattern.finditer(text):
             s, e = m.span()
-            if any(s < te and ts < e for ts, te in taken):
+            i = bisect.bisect_left(starts, s)
+            if (i > 0 and ends[i - 1] > s) or (i < len(starts) and starts[i] < e):
                 continue  # an earlier, more specific pattern already matched
-            taken.append((s, e))
+            starts.insert(i, s)
+            ends.insert(i, e)
             found.append(PIIResult(entity, s, e, 0.5))
     return found
 
@@ -75,10 +84,13 @@ def detect_pii(text: str) -> list[PIIResult]:
 def sanitize_pii(text: str) -> str:
     """Replace PII entities with [REDACTED-<TYPE>] placeholders."""
     results = sorted(detect_pii(text), key=lambda r: r.start, reverse=True)
-    last_start = len(text) + 1
+    pieces: list[str] = []
+    last_start = len(text)
     for r in results:
         if r.end > last_start:
             continue  # skip overlapping spans
-        text = text[:r.start] + f"[REDACTED-{r.entity_type}]" + text[r.end:]
+        pieces.append(text[r.end:last_start])
+        pieces.append(f"[REDACTED-{r.entity_type}]")
         last_start = r.start
-    return text
+    pieces.append(text[:last_start])
+    return "".join(reversed(pieces))
