@@ -24,7 +24,7 @@ The OpenGPL Sidecar is a self-hosted HTTP decision service built on [FastAPI](ht
 
 **Architecture:**
 
-```
+```text
 User Request
     │
     ▼

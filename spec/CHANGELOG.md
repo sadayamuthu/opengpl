@@ -10,6 +10,7 @@ OpenGPL uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.1.1] — 2026-10-31
 
 ### Changed (editorial, no schema changes)
+
 - `enforcement.engine` default and examples now name the reference implementation `opengpl-sdk` (was `OpenLSP`)
 - Identity and compliance-tool integrations described generically (any OIDC provider, any OSCAL-aware tool) rather than by product
 - Integration guide rewritten against the real `opengpl-sdk` API; planned features marked as planned
@@ -24,6 +25,7 @@ OpenGPL uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 This is the first public draft of the OpenGPL specification, released for community review under the OpenAstra.
 
 #### Added
+
 - Core policy schema: `opengpl`, `policy`, `version`, `status`, `owner`, `description`
 - `applies_to` block: model, agent, context, environment, and date scoping
 - `input_controls` block: threat detection, data sanitization, token limits, auth requirements
@@ -43,6 +45,7 @@ This is the first public draft of the OpenGPL specification, released for commun
 ## Upcoming
 
 ### [0.2.0] — In design
+
 - Principals, entitlements and delegation chains (`human → agent → agent → tool → resource`)
 - Governance blocks: inventory, usage vs. grant, access reviews with OSCAL evidence
 - Gateway integration via Envoy `ext_authz` and OpenID AuthZEN, starting with agentgateway
@@ -50,11 +53,13 @@ This is the first public draft of the OpenGPL specification, released for commun
 - ISO 42001 and DPDPA compliance mappings
 
 ### [0.3.0] — Q1 2026 (Planned)
+
 - Multi-modal content policy (image, audio)
 - Attribution tracking and provenance chains
 - Agent-to-agent trust delegation
 
 ### [1.0.0] — Q3 2026 (Planned)
+
 - Stable specification
 - NIST NCCoE submission
 - Formal certification program launch
