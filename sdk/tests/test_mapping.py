@@ -56,7 +56,7 @@ def test_sorted_numerically():
 
 
 def test_framework_files_and_get_field():
-    assert set(FRAMEWORK_FILES) == {"FedRAMP-Low", "FedRAMP-Moderate", "FedRAMP-High"}
+    assert set(FRAMEWORK_FILES) == {"FedRAMP-Low", "FedRAMP-Moderate", "FedRAMP-High", "NIST-AI-RMF", "EU-AI-Act", "HIPAA", "SOC2"}
     assert get_field({"a": {"b": 1}}, "a.b") == 1
     assert get_field({"a": {}}, "a.b") is None
     assert get_field({"a": 3}, "a.b") is None

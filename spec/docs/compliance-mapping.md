@@ -8,6 +8,8 @@ This document provides detailed mapping between OpenGPL policy controls and majo
 
 ## Table of Contents
 
+- [How to read the mapping tables](#how-to-read-the-mapping-tables)
+
 1. [NIST AI Risk Management Framework](#1-nist-ai-risk-management-framework)
 2. [FedRAMP (Low / Moderate / High)](#2-fedramp)
 3. [HIPAA Technical Safeguards](#3-hipaa)
@@ -19,46 +21,34 @@ This document provides detailed mapping between OpenGPL policy controls and majo
 
 ---
 
+## How to read the mapping tables
+
+The tables for NIST AI RMF, FedRAMP (SP 800-53), HIPAA, the EU AI Act and SOC 2 are generated from the mapping data that the reference SDK uses to build OSCAL output (`sdk/src/opengpl/compliance/mappings/`). Do not edit them by hand; run `python spec/scripts/gen_compliance_mapping.py`.
+
+- A row exists only where a policy field supports that specific requirement. Requirements met by the policy document as a whole, or by practice outside the policy, are not listed.
+- **Condition** is what the field must hold for the row to apply. A control is reported for a policy only if the condition holds.
+- **Reference SDK status** is what `opengpl-sdk` does with the field: `enforced` (the SDK implements it), `heuristic` (the SDK implements it with pattern-based detection) or `declared` (the policy states it and the SDK does not enforce it). For a list condition it is the weakest status over all the listed values; in OSCAL output the status is computed from the values the policy actually sets, so it can be stronger. Another runtime may do more.
+- A row supports part of a requirement. It is evidence for an assessor, not an assessment result.
+
+---
+
 ## 1. NIST AI Risk Management Framework
 
 The NIST AI RMF (NIST AI 100-1) organizes AI governance into four core functions: GOVERN, MAP, MEASURE, and MANAGE.
 
-### GOVERN
+Subcategory IDs are from NIST AI 100-1, Tables 1–4.
 
-| RMF Sub-Function | OpenGPL Control | Notes |
-|---|---|---|
-| GV-1: Policies and procedures | Policy document itself | Each policy is a governance artifact |
-| GV-2: Accountability | `owner` field | Assigns responsibility |
-| GV-3: Organizational roles | `owner`, `metadata.approved_by` | Role-based accountability |
-| GV-4: Risk tolerance | `enforcement.on_violation` | Defines organizational risk posture |
-| GV-6: Review cadence | `metadata.review_cycle` | Formal review schedule |
-
-### MAP
-
-| RMF Sub-Function | OpenGPL Control | Notes |
-|---|---|---|
-| MP-2: Impact classification | `applies_to.contexts` | Context maps to risk level |
-| MP-3: AI system inventory | `applies_to.models`, `applies_to.agents` | Model and agent inventory |
-| MP-4: Risk identification | `input_controls.detect` | Threat category enumeration |
-| MP-5: Stakeholder identification | `owner`, `audit.alert_channels` | Defines who is notified |
-
-### MEASURE
-
-| RMF Sub-Function | OpenGPL Control | Notes |
-|---|---|---|
-| MS-1: Measurement methods | `audit.log_level`, `audit.format` | Defines evidence collection |
-| MS-2: Evaluation | `output_controls.hallucination_threshold` | Quantified quality metric |
-| MS-2.5: Bias/fairness | `output_controls.deny_topics` | Topic restrictions reduce discriminatory outputs |
-| MS-4: Incident tracking | `audit.alert_on_violation`, `audit.alert_channels` | Incident notification |
-
-### MANAGE
-
-| RMF Sub-Function | OpenGPL Control | Notes |
-|---|---|---|
-| MG-1: Response plans | `enforcement.on_violation` | Defines violation response |
-| MG-2: Incident response | `enforcement.on_detection`, `audit.alert_channels` | Detection and escalation |
-| MG-3: Risk treatment | `model_controls.trust_level` | Risk-based access control |
-| MG-4: Residual risk | `enforcement.fallback` | Fail-safe behavior |
+<!-- BEGIN GENERATED:NIST-AI-RMF -->
+<!-- Generated from sdk/src/opengpl/compliance/mappings/nist-ai-rmf.yaml by spec/scripts/gen_compliance_mapping.py. Do not edit by hand. -->
+| Control | Policy field | Condition | Reference SDK status | Rationale |
+|---|---|---|---|---|
+| `GOVERN 1.5` | `metadata.review_cycle` | set | declared | GOVERN 1.5 asks that periodic review be planned, 'including determining the frequency of periodic review'; the field records that frequency for this policy only. Policy declaration; the SDK does not schedule or track reviews. |
+| `MAP 1.5` | `output_controls.hallucination_threshold` | set | declared | MAP 1.5 (risk tolerances are determined and documented): the field documents a quantified tolerance for one risk, hallucination. Policy declaration; it is not an organization-wide tolerance and the SDK does not score hallucination. |
+| `MAP 3.5` | `model_controls.require_human_in_loop` | set | declared | MAP 3.5 (processes for human oversight are defined and documented): the field defines when human approval is required. Policy declaration; the reference SDK does not pause for approval. |
+| `MEASURE 2.4` | `audit.log_level` | one of `STANDARD`, `FULL`, `DEBUG` | enforced | MEASURE 2.4 (functionality and behavior of the AI system and its components are monitored in production): gate decision records capture what the input and output gates allowed or blocked. |
+| `MANAGE 1.3` | `input_controls.detect` | includes any of `prompt_injection`, `jailbreak`, `context_stuffing`, `role_confusion`, `data_exfiltration`, `adversarial_elicitation` | declared | MANAGE 1.3 (responses to high-priority AI risks are developed, planned and documented; options include mitigating): the field documents a mitigating response to named input attacks. It does not perform the prioritization itself (MANAGE 1.2). |
+| `MANAGE 4.3` | `audit.alert_on_violation` | `true` | declared | MANAGE 4.3 (incidents and errors are communicated to relevant AI actors): violation alerts communicate one class of incident. Policy declaration; the SDK does not send alerts or track incidents. |
+<!-- END GENERATED:NIST-AI-RMF -->
 
 ---
 
@@ -83,24 +73,25 @@ enforcement:
 
 Required controls for most federal civilian agency systems handling Controlled Unclassified Information (CUI).
 
-| Control Family | Control ID | OpenGPL Mapping |
-|---|---|---|
-| Access Control | AC-2 | `model_controls.trust_level`, `require_user_auth` |
-| Access Control | AC-3 | `model_controls.allow_tools`, `deny_tools` |
-| Access Control | AC-6 | `trust_level: LOW` for least privilege |
-| Audit & Accountability | AU-2 | `audit.log_level: STANDARD` or higher |
-| Audit & Accountability | AU-3 | `audit.format: OSCAL` |
-| Audit & Accountability | AU-9 | `audit.pii_in_logs: false` |
-| Audit & Accountability | AU-12 | `audit.evidence_export: true` |
-| Config Management | CM-2 | Policy `version` field + Git history |
-| Config Management | CM-6 | Policy as code in version control |
-| Config Management | CM-9 | `status: ACTIVE/DRAFT/DEPRECATED` |
-| Identification & Auth | IA-2 | `require_user_auth: true` + identity provider |
-| Identification & Auth | IA-3 | Agent identity via identity provider |
-| System Integrity | SI-3 | `input_controls.detect: [prompt_injection, jailbreak]` |
-| System Integrity | SI-10 | `input_controls.sanitize` |
-| System & Comm. Protection | SC-7 | `allow_external_calls: false` |
-| System & Comm. Protection | SC-8 | `audit.format: OSCAL` (transmission integrity) |
+The same SP 800-53 Rev 5 mapping is used for FedRAMP Low, Moderate and High. In OSCAL output, mapped controls that are not in the selected baseline are omitted with a notice.
+
+<!-- BEGIN GENERATED:FedRAMP-Moderate -->
+<!-- Generated from sdk/src/opengpl/compliance/mappings/sp800-53r5.yaml by spec/scripts/gen_compliance_mapping.py. Do not edit by hand. -->
+| Control | Policy field | Condition | Reference SDK status | Rationale |
+|---|---|---|---|---|
+| `ac-3` | `model_controls.allow_tools` | set | declared | AC-3 access enforcement: the tool allow-list is an approved authorization for the model's access to tools (system resources). |
+| `ac-3` | `model_controls.deny_tools` | set | declared | AC-3 access enforcement: the tool deny-list withholds authorization for specific tools. |
+| `ac-4` | `model_controls.allow_external_calls` | `false` | declared | AC-4 information flow enforcement: restricts flow of information from the system to connected external systems. |
+| `au-2` | `audit.log_level` | one of `STANDARD`, `FULL`, `DEBUG` | enforced | AU-2 event logging (item a/c): gate decisions are the event type the system is capable of logging and logs. |
+| `au-3` | `audit.log_level` | one of `STANDARD`, `FULL`, `DEBUG` | enforced | AU-3 content of audit records: decision records establish what occurred, when and the outcome. |
+| `au-11` | `audit.retention_days` | set | declared | AU-11 audit record retention: states the period for which audit records are to be retained. |
+| `au-12` | `audit.log_level` | one of `STANDARD`, `FULL`, `DEBUG` | enforced | AU-12 audit record generation (item c): generates records for the logged event types with the AU-3 content. |
+| `ia-2` | `input_controls.require_user_auth` | `true` | declared | IA-2 identification and authentication of organizational users: policy requires users to be authenticated before requests are accepted. |
+| `sc-7` | `model_controls.allow_external_calls` | `false` | declared | SC-7 boundary protection (item a): policy declaration restricting communications at the system's external interface; it does not implement managed interfaces or boundary devices (item c). |
+| `si-4` | `audit.alert_on_violation` | `true` | declared | SI-4 system monitoring (item g): policy declaration that monitoring information (violation alerts) is provided to personnel; it does not implement detection (item a). |
+| `si-10` | `input_controls.detect` | includes any of `prompt_injection`, `jailbreak`, `context_stuffing`, `data_exfiltration` | declared | SI-10 input validation: checks the validity of prompts (information inputs) against the listed attack classes. |
+| `si-15` | `output_controls.block` | set | declared | SI-15 information output filtering: validates model output against expected content by blocking listed categories. |
+<!-- END GENERATED:FedRAMP-Moderate -->
 
 **Recommended minimum policy for FedRAMP Moderate:**
 
@@ -145,18 +136,15 @@ For systems handling national security information. Adds:
 
 ## 3. HIPAA
 
-HIPAA Technical Safeguards (45 CFR Part 164, Subpart C) apply to systems handling Protected Health Information (PHI).
+HIPAA Technical Safeguards (45 CFR 164.312, in Part 164, Subpart C) apply to systems handling Protected Health Information (PHI).
 
-| Safeguard | 45 CFR Reference | Required Standard | OpenGPL Control |
-|---|---|---|---|
-| Access Control | 164.312(a)(1) | Unique user ID | `require_user_auth: true` + identity provider |
-| Access Control | 164.312(a)(1) | Automatic logoff | `applies_to.effective_until` (session scope) |
-| Access Control | 164.312(a)(1) | Encryption/decryption | Handled by the runtime's transport layer (TLS) |
-| Audit Controls | 164.312(b) | Activity logging | `log_level: FULL`, `format: OSCAL` |
-| Integrity | 164.312(c)(1) | PHI alteration protection | `output_controls.block: [PHI]` |
-| Integrity | 164.312(c)(2) | Transmission integrity | `allow_external_calls: false` |
-| Person Auth | 164.312(d) | Verify identity | `require_user_auth: true` |
-| Transmission Security | 164.312(e)(1) | Guard against unauthorized access | `allow_external_calls: false` |
+<!-- BEGIN GENERATED:HIPAA -->
+<!-- Generated from sdk/src/opengpl/compliance/mappings/hipaa.yaml by spec/scripts/gen_compliance_mapping.py. Do not edit by hand. -->
+| Control | Policy field | Condition | Reference SDK status | Rationale |
+|---|---|---|---|---|
+| `164.312(b)` | `audit.log_level` | one of `STANDARD`, `FULL`, `DEBUG` | enforced | 164.312(b) audit controls: a software mechanism that records activity in a system that uses ePHI. It covers recording only; examining the records is not implemented. |
+| `164.312(d)` | `input_controls.require_user_auth` | `true` | declared | 164.312(d) person or entity authentication: requires that the identity of the person making a request be verified. Policy declaration; verification is done by the deployment's identity provider, not the SDK. |
+<!-- END GENERATED:HIPAA -->
 
 **Required fields for HIPAA compliance:**
 
@@ -185,19 +173,19 @@ The EU AI Act (Regulation (EU) 2024/1689) applies different requirements based o
 
 ### High-Risk AI Systems (Annex III)
 
-For AI systems in high-risk categories (healthcare, education, employment, law enforcement, etc.):
+Requirements for high-risk AI systems are in Chapter III, Section 2 (Articles 9–15). Control IDs are `art-<article>.<paragraph>`. Article 9 (risk management system), Article 10 (data and data governance, which concerns training, validation and testing data) and Article 11 (technical documentation) have no policy field that implements them and are not mapped.
 
-| Article | Requirement | OpenGPL Control |
-|---|---|---|
-| Art. 9 — Risk management | Ongoing risk monitoring | `audit.alert_on_violation: true` |
-| Art. 10 — Data governance | Input data quality and bias | `input_controls.sanitize` |
-| Art. 11 — Technical documentation | System documentation | Policy document serves as technical doc |
-| Art. 12 — Record-keeping | Automatic logging | `audit.log_level: FULL` |
-| Art. 13 — Transparency | Informing users | `output_controls.require: [disclaimer]` |
-| Art. 13 — Transparency | Source attribution | `output_controls.require: [source_attribution]` |
-| Art. 14 — Human oversight | Human review mechanisms | `model_controls.require_human_in_loop` |
-| Art. 15 — Accuracy | Performance metrics | `output_controls.hallucination_threshold` |
-| Art. 15 — Robustness | Resilience to errors | `enforcement.fallback: DENY` |
+<!-- BEGIN GENERATED:EU-AI-Act -->
+<!-- Generated from sdk/src/opengpl/compliance/mappings/eu-ai-act.yaml by spec/scripts/gen_compliance_mapping.py. Do not edit by hand. -->
+| Control | Policy field | Condition | Reference SDK status | Rationale |
+|---|---|---|---|---|
+| `art-12.1` | `audit.log_level` | one of `STANDARD`, `FULL`, `DEBUG` | enforced | Art. 12(1) requires that the system technically allow automatic recording of events (logs); the runtime writes gate decision records. It does not by itself meet the Art. 12(3) minimum content for Annex III point 1(a) systems. |
+| `art-13.1` | `output_controls.require` | includes any of `source_attribution`, `confidence_score` | declared | Art. 13(1) (operation sufficiently transparent to enable deployers to interpret the output): cited sources or a confidence indicator help interpret each output. Policy declaration; the SDK does not check responses for them. Instructions for use (Art. 13(2)-(3)) are not covered. |
+| `art-14.4` | `model_controls.require_human_in_loop` | set | declared | Art. 14(4)(d): enables the overseer to decide not to use, or to disregard or override, the output in a given situation. Policy declaration; the reference SDK does not pause for approval. |
+| `art-15.1` | `output_controls.hallucination_threshold` | set | declared | Art. 15(1) (an appropriate level of accuracy): the field sets an accuracy criterion that responses must meet. Policy declaration; the SDK does not score hallucination, and Art. 15(3) declaration in the instructions for use is not covered. |
+| `art-15.4` | `enforcement.fallback` | one of `DENY`, `BLOCK` | declared | Art. 15(4), second subparagraph: robustness may be achieved through 'backup or fail-safe plans'; failing closed on an enforcement fault is such a plan. Policy declaration; the SDK does not implement the fallback. |
+| `art-15.5` | `input_controls.detect` | includes any of `prompt_injection`, `jailbreak`, `context_stuffing`, `role_confusion`, `data_exfiltration`, `adversarial_elicitation` | declared | Art. 15(5), third subparagraph: measures to detect and respond to inputs designed to make the model err (adversarial examples, model evasion) and to confidentiality attacks. Data and model poisoning are not covered. |
+<!-- END GENERATED:EU-AI-Act -->
 
 **Recommended policy additions for EU AI Act compliance:**
 
@@ -224,21 +212,19 @@ audit:
 
 ## 5. SOC 2
 
-SOC 2 Trust Service Criteria (TSC) relevant to AI systems:
+AICPA 2017 Trust Services Criteria (TSP Section 100), common criteria relevant to AI systems:
 
-| TSC | Criteria | OpenGPL Control |
-|---|---|---|
-| CC6.1 | Logical access security | `trust_level`, `require_user_auth` |
-| CC6.2 | Authentication | `require_user_auth: true` + identity provider |
-| CC6.3 | Access removal | `applies_to.effective_until` |
-| CC6.7 — Common Criteria | Transmission protection | `allow_external_calls: false` |
-| CC7.1 | System monitoring | `audit.log_level`, `alert_on_violation` |
-| CC7.2 | Anomaly detection | `input_controls.detect` |
-| CC7.3 | Incident response | `audit.alert_channels` |
-| A1.1 — Availability | Processing commitments | `enforcement.fallback` |
-| C1.1 — Confidentiality | Confidential information | `output_controls.block`, `redact` |
-| P3.1 — Privacy | Data collection limitation | `input_controls.sanitize` |
-| P4.1 — Privacy | Data use limitation | `output_controls.deny_topics` |
+<!-- BEGIN GENERATED:SOC2 -->
+<!-- Generated from sdk/src/opengpl/compliance/mappings/soc2.yaml by spec/scripts/gen_compliance_mapping.py. Do not edit by hand. -->
+| Control | Policy field | Condition | Reference SDK status | Rationale |
+|---|---|---|---|---|
+| `CC6.1` | `input_controls.require_user_auth` | `true` | declared | CC6.1 logical access security (point of focus 'Identifies and Authenticates Users'): users are authenticated before access. Policy declaration; authentication is done by the deployment's identity provider. |
+| `CC6.1` | `model_controls.allow_tools` | set | declared | CC6.1 logical access security (point of focus 'Restricts Logical Access' through access control rule sets): the allow-list is a rule set for the model's access to software. Policy declaration; the reference SDK does not check tool calls. |
+| `CC6.1` | `model_controls.deny_tools` | set | declared | CC6.1 logical access security (point of focus 'Restricts Logical Access'): the deny-list withholds the model's access to named software. Policy declaration; the reference SDK does not check tool calls. |
+| `CC6.7` | `model_controls.allow_external_calls` | `false` | declared | CC6.7 (restricts the transmission of information to authorized external users and processes): forbids the model from transmitting to external APIs or URLs. Policy declaration; it does not protect data in transit. |
+| `CC6.7` | `output_controls.block` | set | declared | CC6.7 point of focus 'Restricts the Ability to Perform Transmission' (data loss prevention): responses containing the listed categories are blocked before delivery. Pattern-based, so heuristic at best. |
+| `CC7.2` | `input_controls.detect` | includes any of `prompt_injection`, `jailbreak`, `context_stuffing`, `role_confusion`, `data_exfiltration`, `adversarial_elicitation` | declared | CC7.2 (monitors system components for anomalies indicative of malicious acts; point of focus 'Implements Detection Policies, Procedures, and Tools'): input detectors flag attack attempts. It does not cover analysis into security events. |
+<!-- END GENERATED:SOC2 -->
 
 ---
 

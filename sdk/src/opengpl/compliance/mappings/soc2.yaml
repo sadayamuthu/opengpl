@@ -1,0 +1,36 @@
+# OpenGPL policy field -> AICPA 2017 Trust Services Criteria (TSP Section 100), common criteria mapping.
+# Criterion IDs and text verified against TSP Section 100 (March 2020 edition); criteria text is unchanged
+# in the 2022 points-of-focus revision.
+# Status (enforced/heuristic/declared) is computed from the SDK registry, not here.
+framework: SOC2-TSC-2017
+entries:
+  - control: CC6.1
+    field: input_controls.require_user_auth
+    when: {"true": true}
+    statement: "input_controls.require_user_auth is true; the policy declares that requests must come from an authenticated user."
+    rationale: "CC6.1 logical access security (point of focus 'Identifies and Authenticates Users'): users are authenticated before access. Policy declaration; authentication is done by the deployment's identity provider."
+  - control: CC6.1
+    field: model_controls.allow_tools
+    when: {present: true}
+    statement: "model_controls.allow_tools is set ({value}); the policy declares an allow-list of tools the model may invoke."
+    rationale: "CC6.1 logical access security (point of focus 'Restricts Logical Access' through access control rule sets): the allow-list is a rule set for the model's access to software. Policy declaration; the reference SDK does not check tool calls."
+  - control: CC6.1
+    field: model_controls.deny_tools
+    when: {present: true}
+    statement: "model_controls.deny_tools is set ({value}); the policy declares tools the model may not invoke."
+    rationale: "CC6.1 logical access security (point of focus 'Restricts Logical Access'): the deny-list withholds the model's access to named software. Policy declaration; the reference SDK does not check tool calls."
+  - control: CC6.7
+    field: model_controls.allow_external_calls
+    when: {"false": true}
+    statement: "model_controls.allow_external_calls is false; the policy declares that the model may not send information to external systems."
+    rationale: "CC6.7 (restricts the transmission of information to authorized external users and processes): forbids the model from transmitting to external APIs or URLs. Policy declaration; it does not protect data in transit."
+  - control: CC6.7
+    field: output_controls.block
+    when: {present: true}
+    statement: "output_controls.block is set ({value}); the policy declares data categories that are blocked from responses."
+    rationale: "CC6.7 point of focus 'Restricts the Ability to Perform Transmission' (data loss prevention): responses containing the listed categories are blocked before delivery. Pattern-based, so heuristic at best."
+  - control: CC7.2
+    field: input_controls.detect
+    when: {any_of: [prompt_injection, jailbreak, context_stuffing, role_confusion, data_exfiltration, adversarial_elicitation]}
+    statement: "input_controls.detect includes {value}; the policy declares detection of these attacks on model inputs."
+    rationale: "CC7.2 (monitors system components for anomalies indicative of malicious acts; point of focus 'Implements Detection Policies, Procedures, and Tools'): input detectors flag attack attempts. It does not cover analysis into security events."

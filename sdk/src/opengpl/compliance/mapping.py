@@ -1,6 +1,7 @@
 """Policy-field to control mapping. A control is reported only if a policy field implements it."""
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from functools import lru_cache
 from importlib.resources import files
@@ -14,6 +15,10 @@ FRAMEWORK_FILES: dict[str, str] = {
     "FedRAMP-Low": "sp800-53r5.yaml",
     "FedRAMP-Moderate": "sp800-53r5.yaml",
     "FedRAMP-High": "sp800-53r5.yaml",
+    "NIST-AI-RMF": "nist-ai-rmf.yaml",
+    "EU-AI-Act": "eu-ai-act.yaml",
+    "HIPAA": "hipaa.yaml",
+    "SOC2": "soc2.yaml",
 }
 
 
@@ -156,9 +161,9 @@ def _evidence(field: str, rendered: str) -> list[str]:
     return [f"{field}={item}" for item in rendered.split(", ")]
 
 
-def _sort_key(control: str) -> tuple[str, tuple[int, ...]]:
-    family, _, num = control.partition("-")
-    return family, tuple(int(x) for x in num.split("."))
+def _sort_key(control: str) -> tuple[str | int, ...]:
+    """Natural sort: ac-3 < ac-11, GOVERN 1.5 < GOVERN 1.10, 164.312(a)(1) < 164.312(b)."""
+    return tuple(int(t) if i % 2 else t for i, t in enumerate(re.split(r"(\d+)", control)))
 
 
 def applicable_controls(policy: dict, framework: str) -> list[AppliedControl]:
