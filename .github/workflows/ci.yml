@@ -93,7 +93,7 @@ jobs:
         run: |
           docker run -d --name sidecar -p 8080:8080 \
             -v "$PWD/spec/examples:/policies:ro" opengpl-sidecar:ci
-          for i in $(seq 1 30); do
+          for _ in $(seq 1 30); do
             curl -fsS localhost:8080/health && break
             sleep 1
           done
