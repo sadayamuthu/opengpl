@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'sdk/**'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -23,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd sdk
-          pip install -e ".[dev]"
+          pip install -e ".[dev,pii]"
           python -m spacy download en_core_web_lg
       - name: Run tests
         run: |

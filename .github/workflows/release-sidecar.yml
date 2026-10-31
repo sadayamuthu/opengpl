@@ -59,8 +59,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Docker Hub is a best-effort mirror; GHCR is the primary registry.
       - name: Login to Docker Hub
+        id: dockerhub_login
         if: ${{ env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != '' }}
+        continue-on-error: true
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -89,7 +92,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Push to Docker Hub
-        if: ${{ env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != '' }}
+        if: ${{ steps.dockerhub_login.outcome == 'success' }}
         continue-on-error: true
         env:
           VERSION: ${{ steps.version.outputs.version }}
@@ -107,13 +110,14 @@ jobs:
         id: release_body
         env:
           VERSION: ${{ steps.version.outputs.version }}
+          DOCKERHUB_OK: ${{ steps.dockerhub_login.outcome == 'success' }}
         run: |
           {
             echo "body<<EOF"
             echo "Docker images published:"
             echo "- \`docker pull ghcr.io/${{ github.repository }}/sidecar:${VERSION}\`"
             echo "- \`docker pull ghcr.io/${{ github.repository }}/sidecar:latest\`"
-            if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_TOKEN" ]; then
+            if [ "$DOCKERHUB_OK" = "true" ]; then
               echo ""
               echo "Also available on Docker Hub (if credentials are configured with push access):"
               echo "- \`docker pull opengpl/sidecar:${VERSION}\`"
