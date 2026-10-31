@@ -1,0 +1,131 @@
+name: OpenGPL policy check
+description: Validate OpenGPL policy files and, optionally, write OSCAL compliance evidence. Writes a report to the job summary.
+author: sadayamuthu
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  policies:
+    description: Policy files to validate, as space- or newline-separated glob patterns (** is supported).
+    required: false
+    default: '**/*.gpl'
+  audit-policy:
+    description: One policy file to generate OSCAL output for. Leave empty to only validate.
+    required: false
+    default: ''
+  framework:
+    description: 'Framework for the OSCAL output: FedRAMP-Low, FedRAMP-Moderate or FedRAMP-High. The policy must list it in audit.compliance.'
+    required: false
+    default: FedRAMP-Moderate
+  decisions:
+    description: Optional JSONL decision log; when set, OSCAL assessment results are written too.
+    required: false
+    default: ''
+  output-dir:
+    description: Directory for the OSCAL files.
+    required: false
+    default: opengpl-oscal
+  version:
+    description: opengpl-sdk version to install, such as 0.2.1, or latest.
+    required: false
+    default: latest
+  python-version:
+    description: Python version to run opengpl-sdk with (3.11 or newer).
+    required: false
+    default: '3.11'
+
+outputs:
+  component-definition:
+    description: Path of the OSCAL component definition, when audit-policy is set.
+    value: ${{ steps.audit.outputs.component-definition }}
+  assessment-results:
+    description: Path of the OSCAL assessment results, when audit-policy and decisions are set.
+    value: ${{ steps.audit.outputs.assessment-results }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install opengpl-sdk
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: |
+        if [[ "$VERSION" == "latest" ]]; then
+          pip install --quiet opengpl-sdk
+        else
+          pip install --quiet "opengpl-sdk==${VERSION#v}"
+        fi
+        opengpl --version
+
+    - name: Validate policies
+      shell: bash
+      env:
+        PATTERNS: ${{ inputs.policies }}
+      run: |
+        # ** needs bash 4+; on older bash it matches a single directory level.
+        shopt -s globstar nullglob 2>/dev/null || shopt -s nullglob
+        files=()
+        for pattern in $PATTERNS; do
+          for f in $pattern; do files+=("$f"); done
+        done
+        if [[ ${#files[@]} -eq 0 ]]; then
+          echo "::error::No policy files matched: $PATTERNS"
+          exit 1
+        fi
+        failed=0
+        {
+          echo "## OpenGPL policy check"
+          echo
+          echo "| Policy file | Result |"
+          echo "|---|---|"
+        } >> "$GITHUB_STEP_SUMMARY"
+        for f in "${files[@]}"; do
+          if out=$(opengpl validate "$f" 2>&1); then
+            echo "| \`$f\` | ✅ valid |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            failed=1
+            msg=$(echo "$out" | tail -1 | sed 's/^✗ //' | tr '|' '/')
+            echo "| \`$f\` | ❌ $msg |" >> "$GITHUB_STEP_SUMMARY"
+            echo "::error file=$f::$msg"
+          fi
+        done
+        exit $failed
+
+    - name: Generate OSCAL evidence
+      id: audit
+      if: inputs.audit-policy != ''
+      shell: bash
+      env:
+        POLICY: ${{ inputs.audit-policy }}
+        FRAMEWORK: ${{ inputs.framework }}
+        DECISIONS: ${{ inputs.decisions }}
+        OUT: ${{ inputs.output-dir }}
+      run: |
+        mkdir -p "$OUT"
+        cd_path="$OUT/component-definition.json"
+        args=(audit "$POLICY" --framework "$FRAMEWORK" --output "$cd_path")
+        if [[ -n "$DECISIONS" ]]; then
+          ar_path="$OUT/assessment-results.json"
+          args+=(--decisions "$DECISIONS" --results-output "$ar_path")
+        fi
+        out=$(opengpl "${args[@]}" 2>&1) || { echo "$out"; echo "::error::opengpl audit failed"; exit 1; }
+        echo "$out"
+        echo "component-definition=$cd_path" >> "$GITHUB_OUTPUT"
+        if [[ -n "$DECISIONS" ]]; then
+          echo "assessment-results=$ar_path" >> "$GITHUB_OUTPUT"
+        fi
+        {
+          echo
+          echo "### OSCAL evidence ($FRAMEWORK)"
+          echo
+          echo '```text'
+          echo "$out"
+          echo '```'
+          echo
+          echo "Statuses are \`enforced\`, \`heuristic\` or \`declared\`; this is evidence for an assessor, not an assessment."
+        } >> "$GITHUB_STEP_SUMMARY"

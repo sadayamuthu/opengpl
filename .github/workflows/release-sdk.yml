@@ -76,3 +76,12 @@ jobs:
           tag_name: sdk-v${{ steps.version.outputs.version }}
           name: "opengpl-sdk v${{ steps.version.outputs.version }}"
           generate_release_notes: true
+
+      # The GitHub Action (action.yml) is used as sadayamuthu/opengpl@v0 and
+      # installs opengpl-sdk from PyPI, so v0 follows the latest SDK release.
+      - name: Move the v0 action tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f v0
+          git push -f origin refs/tags/v0

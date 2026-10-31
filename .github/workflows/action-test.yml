@@ -1,0 +1,49 @@
+name: Action test
+
+# Runs the GitHub Action in this repository against the example policies.
+# It installs opengpl-sdk from PyPI, so it tests the action script against
+# the latest published SDK.
+
+on:
+  push:
+    paths: ['action.yml', '.github/workflows/action-test.yml', 'spec/examples/**']
+  pull_request:
+    paths: ['action.yml', '.github/workflows/action-test.yml', 'spec/examples/**']
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: opengpl
+        uses: ./
+        with:
+          policies: spec/examples/*.gpl
+          audit-policy: spec/examples/fedramp-moderate.gpl
+          framework: FedRAMP-Moderate
+      - name: Check outputs
+        env:
+          CD: ${{ steps.opengpl.outputs.component-definition }}
+        run: |
+          test -s "$CD"
+          python3 -c "import json,sys; d=json.load(open(sys.argv[1])); assert d['component-definition']['metadata']['oscal-version']=='1.2.3'" "$CD"
+
+  invalid-policy-fails:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write an invalid policy
+        run: |
+          printf "opengpl: '0.1'\npolicy: bad\n" > bad.gpl
+      - id: opengpl
+        uses: ./
+        continue-on-error: true
+        with:
+          policies: bad.gpl
+      - name: Expect failure
+        env:
+          OUTCOME: ${{ steps.opengpl.outcome }}
+        run: test "$OUTCOME" = failure
