@@ -56,7 +56,8 @@ def test_concurrent_writes_stay_line_atomic(tmp_path):
 
 def test_read_reports_bad_line_number(tmp_path):
     f = tmp_path / "d.jsonl"
-    f.write_text(json.dumps({"schema": "opengpl.decision/1"}) + "\n{broken\n")
+    good = DecisionLog().record(policy=P(), gate="input", result=R, text="x")
+    f.write_text(json.dumps(good) + "\n{broken\n")
     with pytest.raises(ValueError, match=r":2: invalid JSON"):
         read_decisions(f)
 
@@ -249,3 +250,13 @@ def test_redact_regex_backend_is_linear_time(monkeypatch, name):
     t = time.perf_counter()
     redact_for_log(_ADVERSARIAL_LOG[name])
     assert time.perf_counter() - t < 1
+
+
+@pytest.mark.parametrize("missing", ["id", "timestamp", "policy", "policy_version", "gate", "action", "evaluated"])
+def test_read_rejects_record_missing_keys(tmp_path, missing):
+    f = tmp_path / "d.jsonl"
+    rec = DecisionLog().record(policy=P(), gate="input", result=R, text="x")
+    del rec[missing]
+    f.write_text(json.dumps(rec) + "\n")
+    with pytest.raises(ValueError, match=rf":1: missing key\(s\) {missing}"):
+        read_decisions(f)

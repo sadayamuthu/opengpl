@@ -133,12 +133,13 @@ def assessment_results(
     if not applied:
         raise NothingToReport(f"{name}: no applied control is in the {framework} baseline")
 
-    kept = [
-        d for d in decisions
-        if d.get("policy") == name
-        and str(d.get("policy_version")) == version
-        and d.get("gate") != "model"
-    ]
+    kept = []
+    seen: set[str] = set()
+    for d in decisions:  # first occurrence of a decision id wins
+        if (d.get("policy") == name and str(d.get("policy_version")) == version
+                and d.get("gate") != "model" and str(d["id"]) not in seen):
+            seen.add(str(d["id"]))
+            kept.append(d)
 
     res_uuid = _uuid(f"res:{name}:{version}:{framework}")
     ar_uuid = _uuid(
@@ -171,7 +172,7 @@ def assessment_results(
             "collected": d["timestamp"],
             "props": props,
             "relevant-evidence": [{
-                "description": f"Decision record {d['id']}; text_sha256 {d.get('text_sha256') or 'none'}"
+                "description": f"Decision record {d['id']}"
             }],
         })
 

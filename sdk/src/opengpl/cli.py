@@ -49,7 +49,7 @@ def eval(policy_file: str, prompt: str, context: str | None):
             for reason in input_result.reasons:
                 click.echo(f"  → {reason}")
         click.echo(f"OUTPUT GATE: {output_status}")
-        click.echo(f"AUDIT:       logged")
+        click.echo("AUDIT:       recorded in memory (not persisted)")
     except (FileNotFoundError, ValueError) as e:
         click.echo(click.style(f"✗ {e}", fg="red"))
         sys.exit(1)
@@ -105,7 +105,8 @@ def audit(policy_file: str, framework: str, output: str | None,
             write(res_path, ar)
             n = len(ar["assessment-results"]["results"][0].get("observations", []))
             click.echo(click.style(
-                f"✓ Assessment results written to {res_path} ({n} observations)", fg="green"))
+                f"✓ Assessment results written to {res_path} "
+                f"({n} observation{'' if n == 1 else 's'})", fg="green"))
         elif not cd.get("component-definition", {}).get("components", [{}])[0].get(
                 "control-implementations"):
             click.echo(f"  Note: no mapped controls in the NIST SP 800-53 Rev 5 {level} baseline.")
@@ -119,3 +120,5 @@ def audit(policy_file: str, framework: str, output: str | None,
              "nothing to report.", 2)
     except (FileNotFoundError, ValueError) as e:
         fail(str(e), 1)
+    except OSError as e:  # IsADirectoryError, PermissionError, ...
+        fail(f"Cannot use {e.filename}: {e.strerror or e}", 1)

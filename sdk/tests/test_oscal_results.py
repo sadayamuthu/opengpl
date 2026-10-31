@@ -60,4 +60,14 @@ def test_time_range_and_evidence(tmp_path):
     r = results(assessment_results(fedramp, "FedRAMP-Moderate", recs, now=NOW))
     ts = sorted(x["timestamp"] for x in recs if x["gate"] != "model")
     assert r["start"] == ts[0] and r["end"] == ts[-1]
-    assert all("text_sha256" in o["relevant-evidence"][0]["description"] for o in r["observations"])
+    assert [o["relevant-evidence"][0]["description"] for o in r["observations"]] == [
+        f"Decision record {x['id']}" for x in recs if x["gate"] != "model"]
+    assert "text_sha256" not in json.dumps(r)
+
+def test_duplicate_decisions_are_deduplicated(tmp_path):
+    recs = run_example(tmp_path)
+    once = assessment_results(fedramp, "FedRAMP-Moderate", recs, now=NOW)
+    twice = assessment_results(fedramp, "FedRAMP-Moderate", recs + [dict(r) for r in recs], now=NOW)
+    assert twice == once
+    uuids = [o["uuid"] for o in results(twice)["observations"]]
+    assert len(uuids) == len(set(uuids)) == 3

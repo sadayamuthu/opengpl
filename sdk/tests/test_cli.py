@@ -139,3 +139,45 @@ def test_audit_missing_policy_exit_1():
 def test_audit_output_never_mentions_controlgate(policy_file, tmp_path):
     r = _audit(policy_file, "--framework", "FedRAMP-Moderate", "--output", str(tmp_path / "cd.json"))
     assert "controlgate" not in r.output.lower()
+
+
+def test_eval_says_audit_is_not_persisted(policy_file):
+    r = CliRunner().invoke(main, ["eval", policy_file, "--prompt", "hi"])
+    assert "AUDIT:       recorded in memory (not persisted)" in r.output
+    assert "logged" not in r.output
+
+
+@pytest.mark.parametrize("n,word", [(1, "(1 observation)"), (2, "(2 observations)")])
+def test_audit_pluralises_observations(policy_file, tmp_path, n, word):
+    from opengpl.engine import PolicyEngine
+    log = tmp_path / "d.jsonl"
+    eng = PolicyEngine(policy_file, decision_log=log)
+    for _ in range(n):
+        eng.check_input("hello")
+    r = _audit(policy_file, "--framework", "FedRAMP-Moderate", "--output", str(tmp_path / "cd.json"),
+               "--decisions", str(log), "--results-output", str(tmp_path / "ar.json"))
+    assert r.exit_code == 0, r.output
+    assert word in r.output
+
+
+def test_audit_decision_missing_keys_exit_1_with_line(policy_file, tmp_path):
+    log = tmp_path / "d.jsonl"
+    log.write_text(json.dumps({"schema": "opengpl.decision/1", "id": "x"}) + "\n")
+    r = _audit(policy_file, "--framework", "FedRAMP-Moderate", "--output", str(tmp_path / "cd.json"),
+               "--decisions", str(log), "--results-output", str(tmp_path / "ar.json"))
+    assert r.exit_code == 1, r.output
+    assert f"{log}:1: missing key(s)" in r.output
+    assert isinstance(r.exception, SystemExit)
+
+
+@pytest.mark.parametrize("where", ["decisions", "output"])
+def test_audit_directory_path_exit_1(policy_file, tmp_path, where):
+    log = tmp_path / "d.jsonl"
+    log.write_text("")
+    args = {"output": str(tmp_path / "cd.json"), "decisions": str(log)}
+    args[where] = str(tmp_path)  # a directory
+    r = _audit(policy_file, "--framework", "FedRAMP-Moderate", "--output", args["output"],
+               "--decisions", args["decisions"], "--results-output", str(tmp_path / "ar.json"))
+    assert r.exit_code == 1, r.output
+    assert isinstance(r.exception, SystemExit)
+    assert str(tmp_path) in r.output

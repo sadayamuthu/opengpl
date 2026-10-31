@@ -16,6 +16,8 @@ from opengpl.gates.output_gate import _BLOCK_PATTERNS
 from opengpl.models import EvaluationResult
 
 DECISION_SCHEMA = "opengpl.decision/1"
+# Keys `opengpl audit` needs from every record.
+REQUIRED_KEYS = ("id", "timestamp", "policy", "policy_version", "gate", "action", "evaluated")
 
 # Applied after sanitize_pii so redaction does not depend on the PII backend
 # (Presidio treats well-known test numbers such as 123-45-6789 as fake).
@@ -151,5 +153,8 @@ def read_decisions(path: str | os.PathLike) -> list[dict]:
                 raise ValueError(f"{path}:{lineno}: invalid JSON") from None
             if not isinstance(rec, dict) or rec.get("schema") != DECISION_SCHEMA:
                 raise ValueError(f"{path}:{lineno}: not an opengpl decision record")
+            missing = [k for k in REQUIRED_KEYS if k not in rec]
+            if missing:
+                raise ValueError(f"{path}:{lineno}: missing key(s) {', '.join(missing)}")
             out.append(rec)
     return out
