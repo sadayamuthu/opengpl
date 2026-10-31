@@ -26,10 +26,19 @@ _REDACTIONS = (
 )
 
 
+# Log-only credential shapes the gate regex misses (JSON keys, *_token, Bearer).
+_LOG_CREDENTIAL_PATTERNS = (
+    r"(?i)\b\w*(?:api[_\s-]?key|password|passwd|secret|token)\w*\"?\s*[:=]\s*\"?[^\s\",}]+",
+    r"(?i)\bbearer\s+[^\s\",}]+",
+)
+
+
 def redact_for_log(text: str) -> str:
     text = sanitize_pii(text)
     for key, token in _REDACTIONS:
         text = re.sub(_BLOCK_PATTERNS[key], token, text, flags=re.IGNORECASE)
+    for pat in _LOG_CREDENTIAL_PATTERNS:
+        text = re.sub(pat, "[REDACTED-CREDENTIAL]", text)
     return text
 
 
@@ -40,7 +49,14 @@ def _now() -> str:
 
 
 class DecisionLog:
-    def __init__(self, path: str | os.PathLike | None = None):
+    """Append-only decision log.
+
+    `records` is a recent-window convenience (last `max_records`); the JSONL
+    file is the record of truth.
+    """
+
+    def __init__(self, path: str | os.PathLike | None = None, *, max_records: int | None = 10_000):
+        self.max_records = max_records
         self.records: list[dict] = []
         self._lock = threading.Lock()
         self._fh = open(path, "a", encoding="utf-8") if path is not None else None
@@ -72,6 +88,8 @@ class DecisionLog:
             rec["text"] = text if audit.get("pii_in_logs") is True else redact_for_log(text)
         with self._lock:
             self.records.append(rec)
+            if self.max_records is not None and len(self.records) > self.max_records:
+                del self.records[:len(self.records) - self.max_records]
             if self._fh is not None:
                 self._fh.write(json.dumps(rec) + "\n")
                 self._fh.flush()

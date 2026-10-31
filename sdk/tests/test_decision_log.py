@@ -79,3 +79,30 @@ def test_engine_records_each_gate(tmp_path, engine_policy_file):
     assert recs[0]["fired"] == ["input_controls.detect:prompt_injection"]
     assert recs[0]["policy"] == "test-policy" and recs[0]["policy_version"] == "1.0.0"
     assert len(e.decisions.records) == 3
+
+
+def test_max_records_trims_memory_not_file(tmp_path):
+    f = tmp_path / "d.jsonl"
+    log = DecisionLog(f, max_records=2)
+    recs = [log.record(policy=P(), gate="input", result=R, text=str(i)) for i in range(5)]
+    assert log.records == recs[-2:]
+    assert len(read_decisions(f)) == 5
+
+
+@pytest.mark.parametrize("text,secret", [
+    ("access_token=abc123", "abc123"),
+    ("client_secret: s3cr3t", "s3cr3t"),
+    ('{"api_key": "sk-live-9"}', "sk-live-9"),
+    ("Authorization: Bearer sk-live-9", "sk-live-9"),
+])
+def test_redact_credential_shapes(text, secret):
+    from opengpl.audit.ledger import redact_for_log
+    out = redact_for_log(text)
+    assert secret not in out and "[REDACTED-CREDENTIAL]" in out
+
+
+def test_redact_leaves_prose_and_placeholders():
+    from opengpl.audit.ledger import redact_for_log
+    assert redact_for_log("the token was valid") == "the token was valid"
+    out = redact_for_log("SSN 123-45-6789 password=x")
+    assert "[REDACTED-US_SSN]" in out and "[REDACTED-CREDENTIAL]" in out
