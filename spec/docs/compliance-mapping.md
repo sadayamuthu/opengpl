@@ -56,7 +56,7 @@ Subcategory IDs are from NIST AI 100-1, Tables 1â€“4.
 
 ### FedRAMP Low Baseline
 
-Minimum controls for low-impact federal systems. Suitable for publicly available information.
+An example policy for a low-impact system. The mapping below applies to Low, Moderate and High alike.
 
 ```yaml
 audit:
@@ -71,9 +71,7 @@ enforcement:
 
 ### FedRAMP Moderate Baseline
 
-Required controls for most federal civilian agency systems handling Controlled Unclassified Information (CUI).
-
-The same SP 800-53 Rev 5 mapping is used for FedRAMP Low, Moderate and High. In OSCAL output, mapped controls that are not in the selected baseline are omitted with a notice.
+The same SP 800-53 Rev 5 mapping is used for FedRAMP Low, Moderate and High. In OSCAL output, mapped controls that are not in the selected baseline are omitted with a notice (for example, `si-15` is not in the Moderate baseline).
 
 <!-- BEGIN GENERATED:FedRAMP-Moderate -->
 <!-- Generated from sdk/src/opengpl/compliance/mappings/sp800-53r5.yaml by spec/scripts/gen_compliance_mapping.py. Do not edit by hand. -->
@@ -93,7 +91,7 @@ The same SP 800-53 Rev 5 mapping is used for FedRAMP Low, Moderate and High. In 
 | `si-15` | `output_controls.block` | set | declared; heuristic for `SSN`, `PHI`, `credit_card`, `credentials` | SI-15 information output filtering: for categories the runtime recognises, model output is checked and responses containing them are blocked (the reference SDK recognises SSN, PHI, credit_card and credentials by pattern; other categories are declarations). |
 <!-- END GENERATED:FedRAMP-Moderate -->
 
-**Recommended minimum policy for FedRAMP Moderate:**
+**Example policy for FedRAMP Moderate.** The mapping above relies only on `input_controls.detect`, `input_controls.require_user_auth`, `model_controls.allow_tools`, `model_controls.deny_tools`, `model_controls.allow_external_calls`, `output_controls.block`, and `audit.log_level`, `audit.retention_days` and `audit.alert_on_violation`. The other fields in the example are not mapped to any SP 800-53 control:
 
 ```yaml
 input_controls:
@@ -125,7 +123,8 @@ enforcement:
 
 ### FedRAMP High Baseline
 
-For systems handling national security information. Adds:
+An example of stricter settings. Of the fields below, only `log_level` and `retention_days` are mapped to SP 800-53 controls (`au-2`, `au-3`, `au-11`, `au-12`). The others do not change the OSCAL output:
+
 - `trust_level: UNTRUSTED` as default
 - `log_level: FULL` mandatory
 - `retention_days: 3650` (10 years)
@@ -146,24 +145,18 @@ HIPAA Technical Safeguards (45 CFR 164.312, in Part 164, Subpart C) apply to sys
 | `164.312(d)` | `input_controls.require_user_auth` | `true` | declared | 164.312(d) person or entity authentication: requires that the identity of the person making a request be verified. Policy declaration; verification is done by the deployment's identity provider, not the SDK. |
 <!-- END GENERATED:HIPAA -->
 
-**Required fields for HIPAA compliance:**
+**Fields that the mapping above relies on:**
 
 ```yaml
-output_controls:
-  block: [PHI, SSN, date_of_birth, biometric]
+input_controls:
+  require_user_auth: true   # 164.312(d), declared
 
 audit:
-  log_level: FULL
-  format: OSCAL
-  retention_days: 2555   # 7 years required by 45 CFR 164.530(j)
+  log_level: FULL           # 164.312(b), enforced (STANDARD and DEBUG also qualify)
   compliance: [HIPAA]
-  pii_in_logs: false
-  evidence_export: true
-
-enforcement:
-  on_violation: BLOCK
-  fallback: DENY
 ```
+
+`output_controls.block` is not mapped to a HIPAA control. HIPAA has no OSCAL output; the table is a mapping only.
 
 ---
 
@@ -187,12 +180,14 @@ Requirements for high-risk AI systems are in Chapter III, Section 2 (Articles 9â
 | `art-15.5` | `input_controls.detect` | includes any of `prompt_injection`, `jailbreak`, `context_stuffing`, `role_confusion`, `data_exfiltration`, `adversarial_elicitation` | declared; heuristic for `prompt_injection`, `jailbreak` | Art. 15(5), third subparagraph: measures to detect and respond to inputs designed to make the model err (adversarial examples, model evasion) and to confidentiality attacks. Data and model poisoning are not covered. |
 <!-- END GENERATED:EU-AI-Act -->
 
-**Recommended policy additions for EU AI Act compliance:**
+**Fields that the mapping above relies on:**
 
 ```yaml
+input_controls:
+  detect: [prompt_injection, jailbreak]
+
 output_controls:
   require:
-    - disclaimer
     - source_attribution
     - confidence_score
   hallucination_threshold: 0.10
@@ -200,13 +195,16 @@ output_controls:
 model_controls:
   require_human_in_loop:
     - consequential_decision
-    - user_rights_impact
+
+enforcement:
+  fallback: DENY
 
 audit:
   compliance: [EU-AI-Act]
   log_level: FULL
-  evidence_export: true
 ```
+
+`disclaimer` is not mapped to any article. EU AI Act has no OSCAL output; the table is a mapping only.
 
 ---
 
@@ -268,46 +266,56 @@ output_controls:
 
 ## 8. OSCAL Evidence Generation
 
-When `audit.format: OSCAL` and `audit.evidence_export: true` are set, a runtime generates OSCAL-compatible artifacts that OSCAL-aware compliance tools (for example, ControlGate) can assemble. The reference SDK currently emits only a minimal stub (`opengpl audit`).
+`opengpl audit` writes OSCAL 1.2.3 documents for `FedRAMP-Low`, `FedRAMP-Moderate` and `FedRAMP-High`. NIST AI RMF, EU AI Act, HIPAA and SOC 2 have the mapping tables above and no OSCAL output.
 
 ### Generated Artifacts
 
-| OSCAL Document | Generated When | Contents |
+| OSCAL Document | Written when | Contents |
 |---|---|---|
-| Component Definition | Policy is loaded | Policy controls mapped to NIST 800-53 components |
-| System Security Plan | On first evaluation | Authorization boundary, control implementation statements |
-| Assessment Results | On violation or alert | Findings, observations, risk entries |
-| POA&M | On BLOCK/DENY violation | Plan of Action and Milestones entries |
+| Component Definition | `opengpl audit <policy> --framework <F>` | One implemented requirement per NIST SP 800-53 Rev 5 control that the policy's set fields map to, each naming those fields |
+| Assessment Results | The same command with `--decisions <log>` | Observations built from the decision log. No findings and no risks; `import-ap` points to a back-matter resource that states no assessment plan exists |
 
-### OSCAL Component Definition Example
+The SDK does not generate a system security plan or a POA&M.
 
-A full runtime generates an OSCAL component like the following for each active policy:
+### Implementation status
+
+Each implemented requirement carries an `implementation-status` property in the namespace `https://opengpl.org/ns/oscal`: `enforced`, `heuristic` or `declared`, as defined in [How to read the mapping tables](#how-to-read-the-mapping-tables). When several fields contribute to a control, it carries the weakest of their statuses (`declared` < `heuristic` < `enforced`). A control appears only if the policy sets a field that maps to it.
+
+### Baseline source
+
+Controls are checked against the SP 800-53 Rev 5 Low, Moderate and High baseline profiles that NIST publishes in [`usnistgov/oscal-content`](https://github.com/usnistgov/oscal-content), pinned to tag `v1.6.0`. They are NIST's baselines, not FedRAMP's own. A mapped control that is not in the selected baseline is omitted, and the CLI names it.
+
+### Decision log
+
+The assessment results come from the JSONL decision log (`PolicyEngine(path, decision_log=...)`, or `OPENGPL_DECISION_LOG` for the sidecar). A record stores the rule IDs evaluated and fired, not controls; controls are derived at audit time, so one log can be audited against different frameworks. Under `audit.log_level` FULL or DEBUG, the record holds the text, redacted unless `audit.pii_in_logs` is `true`. Otherwise only a SHA-256 of the text is stored.
+
+### Component Definition Example
+
+An excerpt of the output for `spec/examples/fedramp-moderate.gpl` with `--framework FedRAMP-Moderate`:
 
 ```json
 {
   "component-definition": {
-    "uuid": "<auto-generated>",
-    "metadata": {
-      "title": "OpenGPL Policy: healthcare-customer-service",
-      "version": "2.1.0"
-    },
+    "metadata": { "oscal-version": "1.2.3" },
     "components": [{
       "type": "software",
-      "title": "Patient Portal AI Agent",
-      "implemented-requirements": [
-        {
-          "control-id": "ac-2",
-          "description": "OpenGPL trust_level: LOW with require_user_auth enforced via the identity provider"
-        },
-        {
+      "control-implementations": [{
+        "source": "https://raw.githubusercontent.com/usnistgov/oscal-content/v1.6.0/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_MODERATE-baseline_profile.json",
+        "implemented-requirements": [{
           "control-id": "au-2",
-          "description": "OpenGPL audit.log_level: FULL with OSCAL format output"
-        }
-      ]
+          "description": "audit.log_level is FULL; the runtime writes a decision record for every gate evaluation.",
+          "props": [
+            { "name": "implementation-status", "ns": "https://opengpl.org/ns/oscal", "value": "enforced" },
+            { "name": "policy-field", "ns": "https://opengpl.org/ns/oscal", "value": "audit.log_level=FULL" }
+          ]
+        }]
+      }]
     }]
   }
 }
 ```
+
+The output lists mappings from policy fields to controls. It is evidence for an assessor, not an assessment, and it does not state that any control is met.
 
 ---
 

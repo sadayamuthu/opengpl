@@ -2,6 +2,7 @@ import os
 import pathlib
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+from opengpl.audit.ledger import DecisionLog
 from opengpl.engine import PolicyEngine
 
 POLICY_DIR = os.environ.get("OPENGPL_POLICY_DIR", "/policies")
@@ -10,6 +11,11 @@ _version_file = pathlib.Path(__file__).parent / "VERSION"
 _VERSION = _version_file.read_text().strip() if _version_file.exists() else "0.0.0"
 
 app = FastAPI(title="OpenGPL Sidecar", version=_VERSION)
+
+# One shared decision log for every engine; nothing is written unless
+# OPENGPL_DECISION_LOG is set.
+_DECISION_LOG_PATH = os.environ.get("OPENGPL_DECISION_LOG")
+_decision_log = DecisionLog(_DECISION_LOG_PATH) if _DECISION_LOG_PATH else None
 
 _engines: dict[str, PolicyEngine] = {}
 
@@ -22,7 +28,7 @@ def _get_engine(policy: str) -> PolicyEngine:
     if policy not in _engines:
         if not os.path.exists(resolved):
             raise HTTPException(status_code=404, detail=f"Policy not found: {policy}")
-        _engines[policy] = PolicyEngine(resolved)
+        _engines[policy] = PolicyEngine(resolved, decision_log=_decision_log)
     return _engines[policy]
 
 

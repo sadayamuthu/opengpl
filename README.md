@@ -82,7 +82,7 @@ Existing policy languages — OPA/Rego, AWS Cedar, HashiCorp Sentinel — were b
 - **🔒 Four-plane policy control** — Input, Model, Output, and Audit planes in a single document
 - **🤖 LLM-native** — Trust levels, hallucination thresholds, and tool access as first-class primitives in the language
 - **📋 Compliance-first** — Policy fields map to FedRAMP, NIST AI RMF, HIPAA, and EU AI Act controls
-- **📄 OSCAL output** — Policies are designed to emit OSCAL compliance evidence (the reference SDK emits a minimal stub today)
+- **📄 OSCAL output** — Policies are designed to emit OSCAL compliance evidence (`opengpl audit` writes an OSCAL component definition and assessment results for FedRAMP Low, Moderate and High)
 - **🧩 Composable** — Inherit and extend base policies; wildcard agent matching
 - **🔓 Open standard** — Governed by OpenAstra, licensed CC BY 4.0; no vendor lock-in
 - **⚙️ Framework-agnostic** — Works with any LLM provider or agent framework
@@ -193,7 +193,7 @@ opengpl/
 ## Implementation status
 
 OpenGPL is a public draft. The spec describes what a conforming runtime does;
-the reference SDK (`opengpl-sdk` 0.1.3) implements part of it today.
+the reference SDK (`opengpl-sdk` 0.2.0) implements part of it today.
 
 | Policy block | Reference SDK today |
 |---|---|
@@ -204,7 +204,7 @@ the reference SDK (`opengpl-sdk` 0.1.3) implements part of it today.
 | Other `output_controls` (`redact`, `require`, `hallucination_threshold`, topics) | ⏳ Parsed, not enforced |
 | `model_controls` (tools, trust levels, human-in-loop) | ⏳ Parsed, not enforced; the model gate always allows |
 | `enforcement.on_violation` | ⏳ Violations always return `BLOCK` |
-| `audit` | ⚠️ In-memory ledger; `opengpl audit` writes a minimal OSCAL stub, not a full artifact |
+| `audit` | ✅ JSONL decision log; `opengpl audit` writes an OSCAL 1.2.3 component definition and assessment results (observations only, no findings) for FedRAMP Low, Moderate and High, against NIST SP 800-53 Rev 5 baselines. Each control carries an `implementation-status` of `enforced`, `heuristic` or `declared` |
 
 Use the SDK to try the language and to prototype. Don't rely on it as your
 only defence against prompt injection or data leakage yet. Contributions to
@@ -215,16 +215,17 @@ any ⏳ row are welcome.
 ## Compliance Framework Mapping
 
 The spec maps policy fields to controls in each framework. A mapping shows
-which controls a policy can express evidence for. It is not a certification,
-and the reference SDK does not yet produce assessor-ready evidence (see
+which controls a policy can express evidence for. It is not a certification.
+Only FedRAMP Low, Moderate and High have OSCAL output today; the other
+frameworks are mapping tables only (see
 [Implementation status](#implementation-status)).
 
 | Framework | Mapping in the spec |
 |---|---|
 | NIST AI Risk Management Framework | GOVERN, MAP, MEASURE, MANAGE functions |
-| FedRAMP Low / Moderate / High (NIST SP 800-53) | AC, AU, CM, IA, SC, SI control families |
-| HIPAA Technical Safeguards | §164.312 safeguards |
-| EU AI Act (High-Risk) | Articles 10, 11, 13, 14, 15 |
+| FedRAMP Low / Moderate / High (NIST SP 800-53) | AC, AU, IA, SC, SI control families |
+| HIPAA Technical Safeguards | §164.312(b) and (d) |
+| EU AI Act (High-Risk) | Articles 12, 13, 14, 15 |
 | SOC 2 (Trust Service Criteria) | Common Criteria (CC6, CC7) |
 | ISO/IEC 42001 | Partial (planned for v0.2) |
 | India DPDPA | Partial (planned for v0.2) |
