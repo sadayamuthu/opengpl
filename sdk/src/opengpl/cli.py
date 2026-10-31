@@ -7,7 +7,7 @@ from opengpl import loader
 
 
 @click.group()
-@click.version_option()
+@click.version_option(package_name="opengpl-sdk")
 def main():
     """OpenGPL — policy enforcement for generative AI."""
     pass

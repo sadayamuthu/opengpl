@@ -236,3 +236,11 @@ def test_audit_directory_path_exit_1(policy_file, tmp_path, where):
     assert r.exit_code == 1, r.output
     assert isinstance(r.exception, SystemExit)
     assert str(tmp_path) in r.output
+
+
+def test_version_flag():
+    from opengpl import __version__
+
+    result = CliRunner().invoke(main, ["--version"])
+    assert result.exit_code == 0, result.output
+    assert __version__ in result.output
