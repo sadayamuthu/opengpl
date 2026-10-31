@@ -106,3 +106,12 @@ def test_redact_leaves_prose_and_placeholders():
     assert redact_for_log("the token was valid") == "the token was valid"
     out = redact_for_log("SSN 123-45-6789 password=x")
     assert "[REDACTED-US_SSN]" in out and "[REDACTED-CREDENTIAL]" in out
+
+
+@pytest.mark.parametrize("text", ["token" * 20000, "token_" * 20000 + "!"])
+def test_redact_is_linear_time(text):
+    import time
+    from opengpl.audit.ledger import redact_for_log
+    t = time.perf_counter()
+    redact_for_log(text)
+    assert time.perf_counter() - t < 1

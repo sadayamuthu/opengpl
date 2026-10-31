@@ -28,7 +28,7 @@ _REDACTIONS = (
 
 # Log-only credential shapes the gate regex misses (JSON keys, *_token, Bearer).
 _LOG_CREDENTIAL_PATTERNS = (
-    r"(?i)\b\w*(?:api[_\s-]?key|password|passwd|secret|token)\w*\"?\s*[:=]\s*\"?[^\s\",}]+",
+    r"(?i)\b[\w-]{0,40}?(?:api[_\s-]?key|password|passwd|secret|token)[\w-]{0,40}\"?\s*[:=]\s*\"?[^\s\",}]+",
     r"(?i)\bbearer\s+[^\s\",}]+",
 )
 
