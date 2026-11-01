@@ -17,7 +17,7 @@ jobs:
   validate-and-audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: opengpl
         uses: ./
         with:
@@ -34,7 +34,7 @@ jobs:
   invalid-policy-fails:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Write an invalid policy
         run: |
           printf "opengpl: '0.1'\npolicy: bad\n" > bad.gpl
