@@ -1,6 +1,7 @@
 # src/opengpl/loader.py
 import json
 import pathlib
+import re
 
 import jsonschema
 import yaml
@@ -9,6 +10,8 @@ _SCHEMA_DIR = pathlib.Path(__file__).parent / "schemas"
 
 
 def _get_schema(version: str) -> dict:
+    if not isinstance(version, str) or not re.fullmatch(r"\d+(?:\.\d+)*", version):
+        raise ValueError("Invalid OpenGPL schema version")
     schema_path = _SCHEMA_DIR / f"opengpl-v{version}.json"
     if schema_path.exists():
         return json.loads(schema_path.read_text())
