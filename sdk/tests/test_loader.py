@@ -43,6 +43,13 @@ def test_load_invalid_schema(tmp_path):
         load(str(f))
 
 
+def test_load_rejects_path_traversal_schema_version(tmp_path):
+    f = tmp_path / "bad-version.gpl"
+    f.write_text(MINIMAL_POLICY.replace("'0.1'", "'../../etc/passwd'"))
+    with pytest.raises(ValueError, match="Invalid OpenGPL schema version"):
+        load(str(f))
+
+
 _TWO = (
     MINIMAL_POLICY.replace("policy: test-policy", "policy: alpha")
     + "---\n"
