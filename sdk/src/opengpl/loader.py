@@ -9,6 +9,14 @@ _SCHEMA_DIR = pathlib.Path(__file__).parent / "schemas"
 
 
 def _get_schema(version: str) -> dict:
+    parts = version.split(".") if isinstance(version, str) else []
+    if len(parts) != 2 or any(
+        not part.isascii()
+        or not part.isdigit()
+        or (len(part) > 1 and part.startswith("0"))
+        for part in parts
+    ):
+        raise ValueError("Invalid OpenGPL schema version")
     schema_path = _SCHEMA_DIR / f"opengpl-v{version}.json"
     if schema_path.exists():
         return json.loads(schema_path.read_text())
