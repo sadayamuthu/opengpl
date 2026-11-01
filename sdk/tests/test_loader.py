@@ -1,7 +1,7 @@
 # tests/test_loader.py
 import pytest
 
-from opengpl.loader import load
+from opengpl.loader import _get_schema, load
 
 MINIMAL_POLICY = """
 opengpl: '0.1'
@@ -70,3 +70,8 @@ def test_load_invalid_yaml_is_value_error(tmp_path):
     f.write_text("opengpl: '0.1'\n  bad: [indent")
     with pytest.raises(ValueError, match="Invalid YAML"):
         load(str(f))
+
+
+def test_schema_version_rejects_path_traversal():
+    with pytest.raises(ValueError, match="Invalid OpenGPL schema version"):
+        _get_schema("../../etc/passwd")
