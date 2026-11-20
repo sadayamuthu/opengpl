@@ -183,5 +183,16 @@ how to propose a spec change. Report security issues privately; see
 ## License
 
 Code, schemas and examples: [Apache License 2.0](LICENSE). The specification
-text ([SPEC.md](spec/SPEC.md)): [CC BY 4.0](spec/LICENSE-SPEC). OpenGPL is
-maintained by [OpenAstra](https://openastra.org).
+text ([SPEC.md](spec/SPEC.md)): [CC BY 4.0](spec/LICENSE-SPEC).
+
+---
+
+<div align="center">
+
+<strong>OpenGPL is an open policy language for AI agents that produces compliance evidence</strong>
+
+OpenGPL is an [OpenAstra](https://openastra.org) initiative · [opengpl.org](https://opengpl.org)
+
+[PyPI](https://pypi.org/project/opengpl-sdk/) · [GitHub](https://github.com/sadayamuthu/opengpl) · [Zenodo](https://doi.org/10.5281/zenodo.23844061)
+
+</div>
